@@ -5,8 +5,10 @@ samples/
 .claude/
 coverage/
 .cursor/
-
-# tsc artifacts from config files
+.env*
+*.log
+.DS_Store
+Thumbs.db
 *.config.js
 *.config.js.map
 *.config.d.ts

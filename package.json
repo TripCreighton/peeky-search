@@ -23,8 +23,19 @@
     "test:run": "vitest run",
     "test:coverage": "vitest run --coverage"
   },
-  "keywords": [],
-  "author": "",
+  "author": "Trip Creighton",
+  "keywords": ["mcp", "web-search", "html-extraction", "bm25", "information-retrieval", "searxng"],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/TripCreighton/peeky-search.git"
+  },
+  "homepage": "https://github.com/TripCreighton/peeky-search#readme",
+  "bugs": {
+    "url": "https://github.com/TripCreighton/peeky-search/issues"
+  },
+  "engines": {
+    "node": ">=20"
+  },
   "license": "MIT",
   "packageManager": "pnpm@10.14.0",
   "devDependencies": {
