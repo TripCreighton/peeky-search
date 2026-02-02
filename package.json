@@ -1,6 +1,6 @@
 {
   "name": "peeky-search",
-  "version": "1.0.16",
+  "version": "1.0.17",
   "description": "IR-based HTML content extraction with MCP server for web search",
   "type": "module",
   "main": "dist/index.js",
@@ -24,7 +24,14 @@
     "test:coverage": "vitest run --coverage"
   },
   "author": "Trip Creighton",
-  "keywords": ["mcp", "web-search", "html-extraction", "bm25", "information-retrieval", "searxng"],
+  "keywords": [
+    "mcp",
+    "web-search",
+    "html-extraction",
+    "bm25",
+    "information-retrieval",
+    "searxng"
+  ],
   "repository": {
     "type": "git",
     "url": "git+https://github.com/TripCreighton/peeky-search.git"
