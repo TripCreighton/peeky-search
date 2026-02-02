@@ -1,4 +1,7 @@
-# peeky-search
+# Peeky Search
+
+[![npm version](https://img.shields.io/npm/v/peeky-search.svg)](https://www.npmjs.com/package/peeky-search)
+[![license](https://img.shields.io/npm/l/peeky-search.svg)](https://github.com/TripCreighton/peeky-search/blob/main/LICENSE)
 
 **Find the answer you're actually looking for.**
 
