@@ -4,9 +4,7 @@
 
 If you discover a security vulnerability in peeky-search, please report it privately rather than opening a public issue.
 
-**Email:** Create a private security advisory on GitHub at https://github.com/TripCreighton/peeky-search/security/advisories/new
-
-Or email security concerns to the maintainer directly.
+Create a private security advisory on GitHub at https://github.com/TripCreighton/peeky-search/security/advisories/new
 
 ### What to include
 
