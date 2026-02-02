@@ -343,6 +343,13 @@ Some models won't recognize MCP tools unless explicitly instructed. Add a rule l
 - **Cursor**: Add to `.cursorrules` or project rules
 - **Other clients**: Add to system prompt, memories, or custom instructions
 
+## Acknowledgements
+
+- [SearXNG](https://github.com/searxng/searxng) - Privacy-respecting metasearch engine that powers the search backend
+- [Model Context Protocol](https://modelcontextprotocol.io/) - The protocol that makes this usable by AI assistants
+- [Cheerio](https://cheerio.js.org/) - Fast HTML parsing
+- [stemmer](https://github.com/words/stemmer) - Porter stemming for token normalization
+
 ## Disclaimer
 
 This tool fetches and extracts content from publicly accessible web pages. Users are responsible for ensuring their use complies with applicable laws and the terms of service of any websites accessed. The authors are not liable for misuse.
