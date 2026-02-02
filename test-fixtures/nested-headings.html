@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Database Design Principles</title>
+</head>
+<body>
+    <main>
+        <h1>Database Design Principles</h1>
+        <p>This guide covers fundamental principles of database design for building scalable and maintainable data systems.</p>
+
+        <h2>Normalization</h2>
+        <p>Database normalization is the process of organizing data to reduce redundancy and improve data integrity.</p>
+
+        <h3>First Normal Form</h3>
+        <p>First normal form requires that each column contains only atomic values. No repeating groups or arrays are allowed.</p>
+
+        <h4>Atomic Values</h4>
+        <p>An atomic value is one that cannot be divided further. For example, a full name should be split into first name and last name columns.</p>
+
+        <h4>Primary Keys</h4>
+        <p>Each table must have a primary key that uniquely identifies each row. This can be a natural key or a surrogate key.</p>
+
+        <h3>Second Normal Form</h3>
+        <p>Second normal form builds on first normal form. It requires that all non-key columns depend on the entire primary key.</p>
+
+        <h4>Partial Dependencies</h4>
+        <p>A partial dependency occurs when a non-key column depends on only part of a composite primary key. These must be removed.</p>
+
+        <h3>Third Normal Form</h3>
+        <p>Third normal form requires that all columns depend directly on the primary key, not on other non-key columns.</p>
+
+        <h4>Transitive Dependencies</h4>
+        <p>A transitive dependency occurs when column A depends on column B, which depends on the primary key. These create anomalies.</p>
+
+        <h2>Indexing Strategies</h2>
+        <p>Proper indexing is crucial for query performance. Indexes speed up data retrieval but slow down write operations.</p>
+
+        <h3>B-Tree Indexes</h3>
+        <p>B-tree indexes are the most common index type. They are balanced tree structures that allow efficient equality and range queries.</p>
+
+        <h3>Hash Indexes</h3>
+        <p>Hash indexes are optimized for equality comparisons. They provide constant-time lookup but do not support range queries.</p>
+
+        <h2>Query Optimization</h2>
+        <p>Understanding how the query optimizer works helps you write more efficient SQL queries.</p>
+
+        <h3>Execution Plans</h3>
+        <p>An execution plan shows how the database engine will execute a query. Use EXPLAIN to analyze query plans.</p>
+
+        <h3>Join Strategies</h3>
+        <p>The optimizer chooses between nested loop joins, hash joins, and merge joins based on table sizes and indexes.</p>
+    </main>
+</body>
+</html>

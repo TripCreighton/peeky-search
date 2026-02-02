@@ -1,0 +1,44 @@
+{
+  "name": "peeky-search",
+  "version": "1.0.16",
+  "description": "IR-based HTML content extraction with MCP server for web search",
+  "type": "module",
+  "main": "dist/index.js",
+  "bin": {
+    "peeky-search": "dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "build:watch": "tsup --watch",
+    "build:tsc": "tsc --project tsconfig.json",
+    "start": "node dist/cli.js",
+    "start:watch": "nodemon --watch src --ext *.ts --exec \"pnpm build && pnpm start\"",
+    "mcp": "node dist/cli.js mcp",
+    "cli": "node dist/cli.js",
+    "test": "vitest",
+    "test:run": "vitest run",
+    "test:coverage": "vitest run --coverage"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "MIT",
+  "packageManager": "pnpm@10.14.0",
+  "devDependencies": {
+    "@types/node": "^22.19.7",
+    "@vitest/coverage-v8": "4.0.18",
+    "tsup": "^8.5.1",
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.18"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "cheerio": "^1.2.0",
+    "domhandler": "^5.0.3",
+    "stemmer": "^2.0.1",
+    "zod": "^3.24.0"
+  }
+}

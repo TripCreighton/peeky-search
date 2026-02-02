@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Understanding React Hooks</title>
+</head>
+<body>
+    <main>
+        <article>
+            <h1>Understanding React Hooks</h1>
+            <p>React Hooks are functions that let you use state and other React features in functional components. They were introduced in React 16.8 and have since become the standard way to write React applications.</p>
+
+            <h2>The useState Hook</h2>
+            <p>The useState hook is the most commonly used hook in React. It allows you to add state to functional components without needing to convert them to class components.</p>
+            <p>When you call useState, you pass in the initial state value. The hook returns an array with two elements: the current state value and a function to update it.</p>
+
+            <pre><code>const [count, setCount] = useState(0);
+
+function handleClick() {
+    setCount(count + 1);
+}</code></pre>
+
+            <h2>The useEffect Hook</h2>
+            <p>The useEffect hook lets you perform side effects in functional components. It serves the same purpose as componentDidMount, componentDidUpdate, and componentWillUnmount in class components.</p>
+            <p>You can use useEffect to fetch data, set up subscriptions, or manually change the DOM. The effect runs after every render by default.</p>
+
+            <h3>Cleanup Functions</h3>
+            <p>Effects can optionally return a cleanup function. This cleanup function runs before the component unmounts and before re-running the effect due to a subsequent render.</p>
+
+            <pre><code>useEffect(() => {
+    const subscription = props.source.subscribe();
+    return () => {
+        subscription.unsubscribe();
+    };
+}, [props.source]);</code></pre>
+
+            <h2>Custom Hooks</h2>
+            <p>Custom hooks let you extract component logic into reusable functions. A custom hook is a JavaScript function whose name starts with "use" and that may call other hooks.</p>
+            <p>Building your own hooks lets you abstract component logic into functions that can be shared across your application or with the community.</p>
+        </article>
+    </main>
+</body>
+</html>

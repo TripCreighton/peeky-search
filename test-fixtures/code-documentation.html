@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>TypeScript Configuration Reference</title>
+</head>
+<body>
+    <main>
+        <h1>TypeScript Configuration Reference</h1>
+        <p>The tsconfig.json file specifies the root files and compiler options required to compile a TypeScript project.</p>
+
+        <h2>Compiler Options</h2>
+        <p>The compilerOptions property contains settings that control how TypeScript compiles your code.</p>
+
+        <h3>Strict Mode Options</h3>
+        <p>Enabling strict mode activates a family of strict type-checking options. This is recommended for all new projects.</p>
+
+        <pre><code>{
+  "compilerOptions": {
+    "strict": true,
+    "noImplicitAny": true,
+    "strictNullChecks": true,
+    "strictFunctionTypes": true,
+    "noUncheckedIndexedAccess": true
+  }
+}</code></pre>
+
+        <h3>Module Resolution</h3>
+        <p>TypeScript supports several module resolution strategies. For modern projects, use "NodeNext" or "Bundler".</p>
+
+        <div class="code-block">
+            <div class="line">  "moduleResolution": "NodeNext",</div>
+            <div class="line">  "module": "NodeNext",</div>
+            <div class="line">  "target": "ESNext"</div>
+        </div>
+
+        <h2>Include and Exclude</h2>
+        <p>The include array specifies which files to compile. Use glob patterns to match files.</p>
+        <p>The exclude array specifies which files to skip. By default, node_modules is excluded.</p>
+
+        <pre><code>{
+  "include": ["src/**/*.ts"],
+  "exclude": ["node_modules", "dist", "**/*.test.ts"]
+}</code></pre>
+
+        <h2>Project References</h2>
+        <p>Project references allow you to structure TypeScript programs into smaller pieces. Each sub-project has its own tsconfig.json.</p>
+        <p>This improves build times through incremental compilation and enables better code organization in monorepos.</p>
+    </main>
+</body>
+</html>

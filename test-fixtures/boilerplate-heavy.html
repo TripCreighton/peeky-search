@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>API Documentation</title>
+    <script>
+        // This should be removed
+        console.log("Hello world");
+        function trackAnalytics() { /* tracking */ }
+    </script>
+    <style>
+        /* This should be removed */
+        .nav { background: blue; }
+        .footer { padding: 20px; }
+    </style>
+</head>
+<body>
+    <nav class="main-navigation">
+        <ul>
+            <li><a href="/">Home</a></li>
+            <li><a href="/docs">Documentation</a></li>
+            <li><a href="/api">API Reference</a></li>
+            <li><a href="/about">About Us</a></li>
+        </ul>
+    </nav>
+
+    <div class="sidebar">
+        <h3>Related Articles</h3>
+        <ul>
+            <li><a href="/article1">Getting Started</a></li>
+            <li><a href="/article2">Advanced Topics</a></li>
+        </ul>
+        <div class="advertisement">
+            <p>Buy our premium plan today!</p>
+        </div>
+    </div>
+
+    <main>
+        <article>
+            <h1>API Reference Guide</h1>
+            <p>This comprehensive guide covers all available API endpoints. Our API uses RESTful conventions and returns JSON responses.</p>
+
+            <h2>Authentication</h2>
+            <p>All API requests require authentication using Bearer tokens. Include your API key in the Authorization header.</p>
+            <p>Tokens expire after 24 hours and must be refreshed using the refresh endpoint.</p>
+
+            <pre><code>Authorization: Bearer your-api-key-here</code></pre>
+
+            <h2>Rate Limiting</h2>
+            <p>The API implements rate limiting to ensure fair usage. Free tier users are limited to 100 requests per hour.</p>
+            <p>When you exceed your rate limit, you will receive a 429 status code. The response headers include X-RateLimit-Reset.</p>
+
+            <h2>Error Handling</h2>
+            <p>All errors return a consistent JSON structure with an error code and message. Client errors use 4xx status codes.</p>
+        </article>
+    </main>
+
+    <aside class="widget-area">
+        <div class="newsletter-signup">
+            <h4>Subscribe to Updates</h4>
+            <form>
+                <input type="email" placeholder="Enter your email">
+                <button>Subscribe</button>
+            </form>
+        </div>
+    </aside>
+
+    <footer>
+        <div class="footer-links">
+            <a href="/privacy">Privacy Policy</a>
+            <a href="/terms">Terms of Service</a>
+            <a href="/contact">Contact</a>
+        </div>
+        <p>Copyright 2024 Example Corp. All rights reserved.</p>
+    </footer>
+</body>
+</html>

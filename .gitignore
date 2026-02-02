@@ -1,0 +1,13 @@
+dist/
+node_modules/
+samples/
+.pnpm-store/
+.claude/
+coverage/
+.cursor/
+
+# tsc artifacts from config files
+*.config.js
+*.config.js.map
+*.config.d.ts
+*.config.d.ts.map
