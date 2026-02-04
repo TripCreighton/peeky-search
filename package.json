@@ -1,6 +1,6 @@
 {
   "name": "peeky-search",
-  "version": "1.0.17",
+  "version": "1.0.18",
   "description": "MCP server for web search that extracts relevant excerpts instead of summarizing. BM25 + heuristic ranking, no LLM needed.",
   "type": "module",
   "main": "dist/index.js",
