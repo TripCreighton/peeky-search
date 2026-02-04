@@ -1,7 +1,7 @@
 {
   "name": "peeky-search",
   "version": "1.0.17",
-  "description": "IR-based HTML content extraction with MCP server for web search",
+  "description": "MCP server for web search that extracts relevant excerpts instead of summarizing. BM25 + heuristic ranking, no LLM needed.",
   "type": "module",
   "main": "dist/index.js",
   "bin": {
@@ -26,10 +26,16 @@
   "author": "Trip Creighton",
   "keywords": [
     "mcp",
+    "mcp-server",
     "web-search",
+    "claude",
+    "cursor",
+    "ai-search",
+    "content-extraction",
     "html-extraction",
     "bm25",
     "information-retrieval",
+    "model-context-protocol",
     "searxng"
   ],
   "repository": {
