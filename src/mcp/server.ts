@@ -58,6 +58,17 @@ Use the same sessionKey across related searches to skip already-fetched URLs. Va
 FOLLOW-UP:
 If an excerpt looks promising but lacks detail, use peeky_fetch_page with that URL to read more.
 
+ITERATIVE SEARCH STRATEGY:
+Start with a broad query to discover relevant terminology, domains, and error messages. Review results before follow-up searches. Use discovered terms, exact error strings, or promising site patterns to refine subsequent queries. First results teach you how the community talks about the problem—use that vocabulary in follow-ups.
+
+MULTI-SITE TARGETING:
+For technical issues, use OR to constrain to high-signal sources:
+  site:github.com OR site:stackoverflow.com OR site:discuss.ai.google.dev "query here"
+This reduces noise from tutorial blogs and SEO content. Boolean operators (OR, AND) between site: operators are filtered from extraction matching, so they won't pollute relevance scoring. Note: OR/AND only work between site: operators—if your search text contains "OR" as a word (e.g., in an error message), it will be preserved.
+
+ERROR MESSAGE SEARCHES:
+When searching for error messages, use exact quotes: "failed to parse" or "invalid schema". Error strings are high-signal anchors that cut through noise.
+
 RETURNS: Extracted text excerpts with source URLs.`,
     {
         query: z.string().describe(

@@ -87,7 +87,7 @@ src/
 │   ├── types.ts          # MCP-specific type definitions
 │   ├── server.ts         # MCP server entry point with peeky_web_search and peeky_fetch_page tools
 │   ├── orchestrator.ts   # Search orchestration: SearXNG → scrape → extract → format
-│   ├── query-parser.ts   # Search operator parsing (site:, "quotes", -exclude, filetype:)
+│   ├── query-parser.ts   # Search operator parsing (site:, "quotes", -exclude, filetype:, OR/AND between sites)
 │   ├── searxng.ts        # SearXNG API client
 │   ├── scraper.ts        # Parallel web scraper with timeout handling
 │   └── __tests__/        # Unit tests for MCP
@@ -213,7 +213,7 @@ interface RankingResult {
 **Tools:**
 
 `peeky_web_search` - Search the web and extract relevant excerpts
-- `query` (string, required): Search query with technical terms. Supports operators: `site:`, `"quotes"`, `-exclude`
+- `query` (string, required): Search query with technical terms. Supports operators: `site:`, `"quotes"`, `-exclude`, `OR`/`AND` (between site: operators)
 - `maxResults` (number, optional): Max pages to scrape (default 5, max 10)
 - `diagnostics` (boolean, optional): Include detailed diagnostics about why pages were filtered or failed (default: false)
 - `sessionKey` (string, optional): Key for cross-call URL deduplication. URLs fetched with the same key won't be re-fetched.

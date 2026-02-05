@@ -129,4 +129,45 @@ describe("parseSearchOperators", () => {
 
         expect(result.extractionQuery).toBe("test");
     });
+
+    it("removes OR between site: operators", () => {
+        const query = "site:github.com OR site:stackoverflow.com react hooks";
+
+        const result = parseSearchOperators(query);
+
+        expect(result.searchQuery).toBe(query);
+        expect(result.extractionQuery).toBe("react hooks");
+    });
+
+    it("removes AND between site: operators", () => {
+        const query = "site:github.com AND site:stackoverflow.com typescript";
+
+        const result = parseSearchOperators(query);
+
+        expect(result.extractionQuery).toBe("typescript");
+    });
+
+    it("removes multiple OR between site: operators", () => {
+        const query = "site:github.com OR site:stackoverflow.com OR site:reddit.com query";
+
+        const result = parseSearchOperators(query);
+
+        expect(result.extractionQuery).toBe("query");
+    });
+
+    it("preserves OR in regular search text", () => {
+        const query = "invalid OR operation error";
+
+        const result = parseSearchOperators(query);
+
+        expect(result.extractionQuery).toBe("invalid OR operation error");
+    });
+
+    it("preserves OR inside quoted phrases", () => {
+        const query = '"invalid OR clause" site:github.com';
+
+        const result = parseSearchOperators(query);
+
+        expect(result.extractionQuery).toBe("invalid OR clause");
+    });
 });

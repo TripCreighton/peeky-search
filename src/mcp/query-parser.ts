@@ -16,9 +16,14 @@ export interface ParsedQuery {
  * - "exact phrase" - exact match (quotes removed for extraction)
  * - -term - exclude term (removed from extraction)
  * - filetype:pdf - file type filter (removed from extraction)
+ * - OR / AND - boolean operators between site: operators (removed from extraction)
  */
 export function parseSearchOperators(query: string): ParsedQuery {
     let extractionQuery = query;
+
+    // Remove boolean operators between site: operators (e.g., "site:a.com OR site:b.com")
+    // Must run BEFORE stripping individual site: operators
+    extractionQuery = extractionQuery.replace(/\bsite:[\w.-]+\s+(OR|AND)\s+(?=site:)/gi, "");
 
     // Remove site:domain.com
     extractionQuery = extractionQuery.replace(/\bsite:[\w.-]+/gi, "");
