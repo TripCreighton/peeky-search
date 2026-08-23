@@ -24,6 +24,7 @@ import { fetchDoc } from "../v2/fetch/resolver";
 import { resolveConfig, searchV2 } from "../v2/pipeline";
 import { buildPassages } from "../v2/passages";
 import type { V2Page, V2Result } from "../v2/pipeline";
+import type { AssembleBudget } from "../v2/assemble";
 import { DEFAULT_CONFIG } from "./types";
 import Logger from "../utils/logger";
 
@@ -35,7 +36,32 @@ export interface SearchV2Options {
     timeout?: number;
     sessionKey?: string;
     debug?: boolean;
+    /** Assembly budget overrides. The URL-survey path re-budgets; search does not. */
+    budget?: AssembleBudget;
+    /**
+     * Whether the URLs returned are recorded against `sessionKey`.
+     *
+     * True for search, where the caller has now READ those pages. False for the
+     * URL survey, where the caller has only been TOLD about them — recording
+     * there would make the follow-up search skip precisely the pages it just
+     * recommended.
+     */
+    recordSession?: boolean;
 }
+
+/**
+ * The outcome of a search attempt: either a result, or a message explaining
+ * why there isn't one.
+ *
+ * Splitting this out of `searchV2Mcp` is what lets two tools share one pipeline
+ * run and differ only in rendering — and it is the reason this module finally
+ * has something testable in it. CLAUDE.md has flagged the absence of coverage
+ * here for a while; a formatter over a fixed `V2Result` is trivial to test and
+ * a string-returning orchestrator is not.
+ */
+export type SearchV2Outcome =
+    | { ok: true; result: V2Result; skipped: number }
+    | { ok: false; message: string };
 
 /**
  * SearXNG is asked for more than `maxResults` because v2 drops documents that
@@ -55,6 +81,16 @@ const REQUEST_MULTIPLIER = 2;
 const MAX_RESULTS_CEILING = 10;
 
 export async function searchV2Mcp(query: string, opts: SearchV2Options = {}): Promise<string> {
+    const outcome = await runSearchV2(query, opts);
+    if (!outcome.ok) return outcome.message;
+    return formatForMcp(query, outcome.result, outcome.skipped);
+}
+
+/**
+ * SERP, session filter, and the v2 pipeline — everything up to but excluding
+ * rendering. Both MCP search tools call this; only the formatter differs.
+ */
+export async function runSearchV2(query: string, opts: SearchV2Options = {}): Promise<SearchV2Outcome> {
     const requested = opts.maxResults ?? DEFAULT_CONFIG.maxResults;
     const maxResults = Math.min(Math.max(Math.floor(requested), 1), MAX_RESULTS_CEILING);
     const pipelineDefaults = resolveConfig({});
@@ -75,16 +111,18 @@ export async function searchV2Mcp(query: string, opts: SearchV2Options = {}): Pr
         });
     } catch (error) {
         const message = error instanceof Error ? error.message : "unknown error";
-        return `Error searching SearXNG: ${message}`;
+        return { ok: false, message: `Error searching SearXNG: ${message}` };
     }
 
     if (serp.length === 0) {
-        return (
-            `No search results for: "${query}"\n\n` +
-            "SearXNG's upstream engines rate-limit under sustained use and then " +
-            "answer with an empty list rather than an error. If this repeats, " +
-            "check `docker logs peeky-searxng`."
-        );
+        return {
+            ok: false,
+            message:
+                `No search results for: "${query}"\n\n` +
+                "SearXNG's upstream engines rate-limit under sustained use and then " +
+                "answer with an empty list rather than an error. If this repeats, " +
+                "check `docker logs peeky-searxng`.",
+        };
     }
 
     const queryTokens = tokenize(extractionQuery);
@@ -95,10 +133,12 @@ export async function searchV2Mcp(query: string, opts: SearchV2Options = {}): Pr
     );
 
     if (newUrls.length === 0) {
-        return (
-            `All ${skippedUrls.length} results for "${query}" were already fetched in this session.\n` +
-            "Vary the query terms to reach different pages."
-        );
+        return {
+            ok: false,
+            message:
+                `All ${skippedUrls.length} results for "${query}" were already fetched in this session.\n` +
+                "Vary the query terms to reach different pages.",
+        };
     }
 
     let result: V2Result;
@@ -108,14 +148,14 @@ export async function searchV2Mcp(query: string, opts: SearchV2Options = {}): Pr
         // does nothing: assembly's own `maxDocs` of 5 decides, so asking for 3
         // returns 5 and asking for 10 also returns 5.
         result = await searchV2(extractionQuery, newUrls, (url) => fetchDoc(url), {
-            budget: { maxDocs: maxResults },
+            budget: { maxDocs: maxResults, ...opts.budget },
         });
     } catch (error) {
         const message = error instanceof Error ? error.message : "unknown error";
-        return `Error extracting results: ${message}`;
+        return { ok: false, message: `Error extracting results: ${message}` };
     }
 
-    if (opts.sessionKey !== undefined) {
+    if (opts.sessionKey !== undefined && (opts.recordSession ?? true)) {
         addUrlsToSession(
             opts.sessionKey,
             result.pages.map((p) => p.url),
@@ -128,7 +168,7 @@ export async function searchV2Mcp(query: string, opts: SearchV2Options = {}): Pr
         debug
     );
 
-    return formatForMcp(query, result, skippedUrls.length);
+    return { ok: true, result, skipped: skippedUrls.length };
 }
 
 /**
@@ -139,7 +179,7 @@ export async function searchV2Mcp(query: string, opts: SearchV2Options = {}): Pr
  * from — the difference between a note in a migration guide and the same words
  * in a changelog entry.
  */
-function formatForMcp(query: string, result: V2Result, skipped: number): string {
+export function formatForMcp(query: string, result: V2Result, skipped: number): string {
     if (result.pages.length === 0) {
         return (
             `No usable content found for: "${query}"\n\n` +
@@ -169,6 +209,139 @@ function formatForMcp(query: string, result: V2Result, skipped: number): string 
     }
 
     return out.join("\n");
+}
+
+// =============================================================================
+// Source survey — the same run, listed rather than quoted
+// =============================================================================
+
+/**
+ * Assembly budget for a URL survey.
+ *
+ * The survey CANNOT skip assembly: a page reaches `V2Result.pages` only if
+ * assembly selected a passage from it, so bypassing the stage returns nothing.
+ * What it does instead is re-budget — take one short passage per document from
+ * as many documents as possible, rather than several long ones from few.
+ *
+ * `relevanceFloor` is the knob that matters and the reason this is a separate
+ * object rather than a couple of overrides. At its default of 0.35 assembly
+ * stops as soon as a candidate scores below a third of the best one, which is
+ * exactly right when every character is quoted back and exactly wrong for a
+ * survey: ask for ten sources and you get four, with no indication that the
+ * other six existed. A survey is asking a different question — "what is out
+ * there" rather than "what is worth quoting" — so it pays a much lower floor.
+ *
+ * NOT MEASURED. Every published number describes the search budget, not this
+ * one. The metrics that would judge it are page-level and already exist
+ * (`sourcePrecision`, `canonicalMrr`, `badRate`), so it is scoreable against
+ * the current labels the moment a corpus is recorded again.
+ */
+const SURVEY_BUDGET: AssembleBudget = {
+    maxPassagesPerDoc: 1,
+    maxCharsPerDoc: 400,
+    totalChars: 4500,
+    relevanceFloor: 0.15,
+};
+
+/** Longest teaser shown under a survey row. One line, not an excerpt. */
+const SURVEY_TEASER_CHARS = 160;
+
+export interface SurveyOptions extends Omit<SearchV2Options, "budget" | "recordSession"> {
+    /** Include the authority reasons behind each score. Off by default: verbose. */
+    explain?: boolean;
+}
+
+/**
+ * List the sources a search would have quoted from, without quoting them.
+ *
+ * Same pipeline, same ordering, ~10% of the characters. It exists for the
+ * survey-then-read shape: spend a little to see what is out there, then spend
+ * properly on the one or two pages worth reading in full.
+ */
+export async function surveySourcesV2(query: string, opts: SurveyOptions = {}): Promise<string> {
+    const outcome = await runSearchV2(query, {
+        ...opts,
+        budget: SURVEY_BUDGET,
+        // The caller has been TOLD about these pages, not shown them. Recording
+        // them would make the follow-up search skip its own recommendations.
+        recordSession: false,
+    });
+    if (!outcome.ok) return outcome.message;
+    return formatSurvey(query, outcome.result, outcome.skipped, opts.explain ?? false);
+}
+
+/** One line of provenance per source, then one line of what it says. */
+export function formatSurvey(
+    query: string,
+    result: V2Result,
+    skipped: number,
+    explain: boolean
+): string {
+    if (result.pages.length === 0) {
+        return (
+            `No usable sources for: "${query}"\n\n` +
+            "Every candidate page either failed to fetch or carried no extractable article."
+        );
+    }
+
+    const out: string[] = [];
+    out.push(`${result.pages.length} sources for "${query}"`);
+    if (skipped > 0) out.push(`(${skipped} already fetched this session, skipped)`);
+    out.push("");
+
+    for (const page of result.pages) {
+        const url = page.finalUrl ?? page.url;
+        out.push(`${page.rank}. ${page.title || url}`);
+        out.push(`   ${url}`);
+
+        const facts = [
+            page.kind,
+            `via ${page.source}`,
+            `authority ${page.authority.score.toFixed(2)}`,
+        ];
+        if (page.authority.canonical) facts.push("CANONICAL");
+        out.push(`   ${facts.join(" · ")}`);
+
+        const teaser = firstLine(page, SURVEY_TEASER_CHARS);
+        if (teaser !== "") out.push(`   "${teaser}"`);
+
+        if (explain) {
+            for (const reason of page.authority.reasons) out.push(`     ${reason}`);
+        }
+        out.push("");
+    }
+
+    out.push("Read one in full with peeky_fetch_page, or re-run peeky_web_search for excerpts.");
+    return out.join("\n");
+}
+
+/**
+ * A single line saying what this page is about.
+ *
+ * Deliberately the top of the best passage rather than a summary: the promise
+ * of this project is that nothing is paraphrased, and a survey row is not the
+ * place to start. The heading line the passage opens with is skipped, since the
+ * row already prints the title.
+ */
+function firstLine(page: V2Page, maxChars: number): string {
+    const excerpt = page.excerpts[0];
+    if (excerpt === undefined) return "";
+
+    const heading = excerpt.headingPath[excerpt.headingPath.length - 1];
+    const lines = excerpt.text.split("\n");
+    const body = lines
+        .filter((line) => line.trim() !== "" && line.trim() !== heading?.trim())
+        .join(" ")
+        .replace(/\s+/g, " ")
+        .trim();
+    if (body === "") return "";
+
+    if (body.length <= maxChars) return body;
+    // Cut on a word boundary; a survey line that ends mid-token reads as broken
+    // rather than as truncated.
+    const cut = body.slice(0, maxChars);
+    const lastSpace = cut.lastIndexOf(" ");
+    return `${(lastSpace > maxChars * 0.6 ? cut.slice(0, lastSpace) : cut).trimEnd()}…`;
 }
 
 /** v1 used 12,000 for a single page; kept so behaviour does not change under callers. */
