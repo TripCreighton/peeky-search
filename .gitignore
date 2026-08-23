@@ -13,3 +13,24 @@ Thumbs.db
 *.config.js.map
 *.config.d.ts
 *.config.d.ts.map
+
+# Eval harness. The query set is source and is committed. Everything the
+# harness derives from other people's pages stays local.
+#
+# The labels are local on purpose, not just for size. Grading a corpus honestly
+# means recording which pages are content farms, which are AI filler, and which
+# are simply wrong — by name. That is sound research method and a bad thing to
+# publish: it is a permanent, machine-readable, publicly attributed judgement on
+# named third-party sites, and this repository is here to distribute the search
+# machinery, not that. The corpus is local too, so committed labels would not
+# let anyone reproduce a run anyway.
+eval/corpus/
+eval/corpus-*/
+eval/runs/
+eval/labels/
+
+# Local experiment artifacts: scratch build output, cached scores, downloaded
+# model weights. All re-derivable, none of it belongs in the repository.
+dist-exp/
+eval/experiments/
+.model-cache/

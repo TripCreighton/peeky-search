@@ -4,18 +4,21 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-peeky-search is an IR-based (Information Retrieval) HTML content extraction tool with MCP server integration. Given an HTML document and a search query, it extracts the most relevant excerpts using BM25 scoring combined with structural heuristics. The pipeline preprocesses HTML, segments content into sentences, ranks by relevance, and assembles coherent excerpts.
+peeky-search is an MCP web-search server for coding agents. It queries a local SearXNG instance, fetches the result pages, and returns **verbatim excerpts** from them rather than an LLM summary — you are not summarizing a summary, you are reading the source.
 
-**Core capabilities:**
-- HTML preprocessing with boilerplate removal
-- Sentence-level segmentation with heading path tracking
-- Document quality gating (rejects low-quality/spam pages early)
-- BM25 + 9-metric heuristic scoring for relevance ranking
-- Two relevance modes: strict (single-page) and search (multi-page)
-- Anchor-based excerpt extraction with context expansion
-- Chunk deduplication and budget-aware assembly
-- MCP server with SearXNG integration for web search
-- Session-based URL deduplication across multiple searches
+**Read this first: there are two pipelines in this repository, and only one of them runs.**
+
+| | v2 (`src/v2/`) | v1 (`src/pipeline.ts`, `src/scoring/`, `src/extraction/`) |
+|---|---|---|
+| MCP `peeky_web_search` | **serves this** | no |
+| MCP `peeky_fetch_page` | **serves this** | no |
+| CLI `--search --pipeline v2` | yes | — |
+| CLI `--search` (default), `--fetch`, `--url`, `--file` | — | yes |
+| Eval harness `--pipeline v1` | — | yes |
+
+**v1 is retained on purpose and must not be deleted or "cleaned up".** `src/eval/adapters/v1.ts` injects fetchers into its `search()` to reproduce the measured baseline, and a baseline you cannot re-run is not a baseline. That extends to v1's known bugs — see [Known v1 bugs, deliberately unfixed](#known-v1-bugs-deliberately-unfixed).
+
+**Measured result** (tranche 2, held out, n=134): v2 nugget recall **0.458** vs v1 **0.338**. Source precision 0.774 vs 0.737, canonical MRR 0.325 vs 0.237, bad rate a tie at 0.042 vs 0.041, and v2 spends more characters (10.5k vs 7.1k). The tuning-set figure was +0.201 and was inflated by overfitting; quote the held-out number.
 
 ## Build & Run Commands
 
@@ -24,437 +27,351 @@ pnpm build          # Compile TypeScript via tsup to dist/
 pnpm build:watch    # Watch mode compilation
 pnpm build:tsc      # Type-check only (tsc)
 pnpm start          # Run CLI (dist/cli.js)
-pnpm start:watch    # Development mode with nodemon
 pnpm mcp            # Run MCP server (dist/cli.js mcp)
-pnpm cli            # Run CLI (alias for start)
+pnpm eval           # Run the evaluation harness CLI (dist/eval/cli.js)
 pnpm test           # Run tests in watch mode (vitest)
 pnpm test:run       # Run tests once
 pnpm test:coverage  # Run tests with coverage report
 ```
 
+**`build:tsc` overwrites the bundled `dist/eval/cli.js` with a broken one.** Always run `pnpm build` after a type-check pass, or `pnpm eval` will fail in a confusing way.
+
+`pnpm` may not be on PATH; `npx --yes pnpm@10.14.0 <script>` works.
+
 **CLI usage:**
 ```bash
-# Setup commands (via cli.ts)
+# Setup (src/cli.ts)
 npx peeky-search setup              # One-time setup (starts SearXNG in Docker)
-npx peeky-search setup --port 9999  # Use custom port
 npx peeky-search setup --check      # Check prerequisites only
-npx peeky-search start              # Start SearXNG container
-npx peeky-search stop               # Stop SearXNG container
-npx peeky-search status             # Check if SearXNG is running
+npx peeky-search start|stop|status  # Manage the SearXNG container
 npx peeky-search uninstall          # Remove all config
 
-# Extraction commands (delegated to index.ts)
-node dist/cli.js --query "search terms" --file page.html [--debug]
-node dist/cli.js --url "https://example.com" --query "search terms" [--debug]
-node dist/cli.js --search --query "search terms" [--max 5] [--debug]
-node dist/cli.js --fetch --url "https://example.com" [--query "optional focus"]
-
-# Help
-npx peeky-search --help
+# Extraction (src/index.ts)
+node dist/cli.js --search --query "..." [--max 5] [--pipeline v2]
+node dist/cli.js --url "https://..." --query "..."       # v1
+node dist/cli.js --fetch --url "https://..."             # v1
+node dist/cli.js --query "..." --file page.html --debug  # v1
 ```
 
 ## Project Structure
 
 ```
 src/
-├── cli.ts                # Unified CLI entry point (setup/start/stop/status/mcp commands)
-├── index.ts              # Extraction logic entry point (file/URL/search modes)
-├── pipeline.ts           # Main extraction pipeline orchestrator
-├── types.ts              # Shared type definitions
-├── __tests__/            # Integration tests
-│   └── pipeline.integration.test.ts
-├── preprocessing/
-│   ├── strip.ts          # HTML stripping, boilerplate removal, main content detection
-│   ├── segment.ts        # Block extraction and sentence segmentation
-│   ├── tokenize.ts       # Text normalization, stemming, stop word removal
-│   └── __tests__/        # Unit tests for preprocessing
-├── scoring/
-│   ├── bm25.ts           # BM25 scoring implementation (k1=1.5, b=0.75)
-│   ├── heuristics.ts     # 9 heuristic scores: position, headingProximity, density,
-│   │                     # structure, proximity, headingPath, coverage, outlier, metaSection
-│   ├── quality.ts        # Document quality assessment (rejects spam/low-quality early)
-│   ├── ranker.ts         # Combined ranking with relevance detection (strict/search modes)
-│   └── __tests__/        # Unit tests for scoring
-├── extraction/
-│   ├── anchors.ts        # Anchor sentence selection with position and content diversity
-│   ├── expand.ts         # Context expansion around anchors with section boundaries
-│   ├── dedupe.ts         # Chunk deduplication, merging, and subset removal
-│   └── __tests__/        # Unit tests for extraction
-├── output/
-│   ├── excerpts.ts       # Final excerpt assembly and formatting
-│   └── __tests__/        # Unit tests for output
+├── cli.ts                # Unified CLI entry (setup/start/stop/status/mcp)
+├── index.ts              # Extraction entry (file/URL/search/fetch modes)
+├── types.ts              # v1 shared types
+├── pipeline.ts           # v1 pipeline orchestrator
+│
+├── v2/                   # THE PIPELINE THAT RUNS
+│   ├── types.ts          # Doc / DocNode / Passage / PassageScore / Authority
+│   ├── parse.ts          # HTML -> DocNode tree (the semantic parser)
+│   ├── pagekind.ts       # reference/guide/qa/issue/changelog/spec/blog/listicle
+│   ├── passages.ts       # DocNodes -> passages (the retrieval unit)
+│   ├── query.ts          # Query understanding: operators, error strings, symbols, versions
+│   ├── rank.ts           # Passage scoring over ONE corpus-wide candidate pool
+│   ├── authority.ts      # Source trust, independent of text match
+│   ├── assemble.ts       # Budget-aware selection (score-per-character)
+│   ├── rerank.ts         # OPTIONAL cross-encoder stage. Off. Do not turn on — see below
+│   ├── pipeline.ts       # searchV2(): stage orchestration + resolved config
+│   └── fetch/
+│       ├── resolver.ts   # Adapter priority: stackexchange > github > registry > markdown > html
+│       ├── stackexchange.ts  # API (votes, accepted flags) — SO 403s every scraper
+│       ├── github.ts     # API / raw README
+│       ├── registry.ts   # npm registry metadata, homepage resolution
+│       ├── markdown.ts   # .md siblings, llms.txt
+│       └── html.ts       # Generic HTML, via parse.ts
+│
+├── eval/                 # Evaluation harness (dev tooling; see below)
+│   ├── cli.ts            # peeky-eval: corpus/record/docs/run/score/diff/dump
+│   ├── cache.ts          # Content-addressed corpus: pages/ serp/ docs/
+│   ├── queryset.ts       # Query set + label loading and validation
+│   ├── nuggets.ts        # The matcher. Strict, deterministic, model-free
+│   ├── score.ts          # Scoreboard: macro-averaged metrics
+│   ├── runner.ts         # Run execution and run-file IO
+│   ├── diff.ts           # Run-to-run comparison
+│   └── adapters/         # v1.ts, v2.ts, oracle.ts
+│
 ├── mcp/
-│   ├── types.ts          # MCP-specific type definitions
-│   ├── server.ts         # MCP server entry point with peeky_web_search and peeky_fetch_page tools
-│   ├── orchestrator.ts   # Search orchestration: SearXNG → scrape → extract → format
-│   ├── query-parser.ts   # Search operator parsing (site:, "quotes", -exclude, filetype:, OR/AND between sites)
+│   ├── server.ts         # MCP entry. Both tools are wired to orchestrator-v2
+│   ├── orchestrator-v2.ts    # searchV2Mcp() and fetchPageV2() — WHAT SHIPS
+│   ├── orchestrator.ts   # v1 search/fetchPage + session dedup. Baseline only
+│   ├── query-parser.ts   # v1 operator parsing (v2/query.ts mirrors it exactly)
 │   ├── searxng.ts        # SearXNG API client
-│   ├── scraper.ts        # Parallel web scraper with timeout handling
-│   └── __tests__/        # Unit tests for MCP
+│   └── scraper.ts        # v1 parallel scraper
+│
+├── preprocessing/        # v1: strip.ts, segment.ts, tokenize.ts
+├── scoring/              # v1: bm25.ts, heuristics.ts, quality.ts, ranker.ts
+├── extraction/           # v1: anchors.ts, expand.ts, dedupe.ts
+├── output/excerpts.ts    # v1 excerpt assembly
 ├── setup/                # Docker/SearXNG setup and management
-│   ├── index.ts          # Setup wizard orchestrator
-│   ├── checks.ts         # Docker/SearXNG prerequisite checks
-│   ├── docker.ts         # Docker container management (start/stop)
-│   ├── templates.ts      # Configuration templates
-│   └── uninstall.ts      # Cleanup functionality
-└── utils/
-    └── logger.ts         # Singleton logger (log, error, debug, timing methods)
+└── utils/logger.ts       # Singleton logger
 
-test-fixtures/            # HTML fixtures for integration tests
-├── basic-article.html    # Standard article with headings and code blocks
-├── boilerplate-heavy.html # Page with nav, footer, ads to test stripping
-├── code-documentation.html # Technical docs with code examples
-├── low-quality.html      # Spam/low-quality content for quality gate testing
-├── abbreviations.html    # Content with Dr., Inc., etc. for sentence splitting
-└── nested-headings.html  # Deep heading hierarchy for path tracking
+eval/                     # Harness DATA. Mostly gitignored — see below
+├── queries/queryset.json # 200 queries. COMMITTED (it is source)
+├── LABELING.md           # The labeling rubric. COMMITTED
+├── labels/               # NOT COMMITTED
+├── corpus/               # NOT COMMITTED
+└── runs/                 # NOT COMMITTED
 ```
+
+`tokenize.ts` and `bm25.ts` are shared: v2 uses v1's tokenizer and IDF primitives. They are not v1-only code.
 
 ## Architecture
 
-### Extraction Pipeline Stages
+### v2 pipeline
 
-1. **Preprocess** (`preprocessing/strip.ts`): Strip scripts/styles, remove boilerplate (nav, footer, ads), find main content container
-2. **Segment** (`preprocessing/segment.ts`): Extract blocks (h1-h6, p, li, pre), split into sentences, track heading paths
-3. **Quality Gate** (`scoring/quality.ts`): Reject low-quality documents early (too few sentences, mostly fragments, short median length)
-4. **Tokenize** (`preprocessing/tokenize.ts`): Normalize text, remove stop words, apply stemming
-5. **Rank** (`scoring/ranker.ts`): Score sentences with BM25 + 9 heuristics, detect relevance
-6. **Select Anchors** (`extraction/anchors.ts`): Pick top sentences with content/position diversity
-7. **Expand** (`extraction/expand.ts`): Build context chunks around anchors, respect section boundaries
-8. **Dedupe** (`extraction/dedupe.ts`): Merge overlapping chunks, remove subsets
-9. **Assemble** (`output/excerpts.ts`): Select excerpts within character budget
+```
+parseQuery -> fetch docs -> detect page kind -> build passages
+    -> score ALL passages against ONE corpus-wide candidate set
+    -> score each source's authority
+    -> assemble under budget
+```
 
-### MCP Search Pipeline
+1. **Query understanding** (`query.ts`): separates search operators from extraction text (mirroring `mcp/query-parser.ts` step-for-step so v1's dork syntax keeps working), then pulls out error strings, code symbols, versions, and quoted phrases as high-signal exact anchors.
+2. **Fetch** (`fetch/resolver.ts`): first adapter whose `canHandle` claims the URL wins, falling through on failure. Structured sources are tried before generic HTML, which claims everything.
+3. **Parse** (`parse.ts`): HTML into a typed `DocNode` tree. Keeps code-block languages, tables, links with anchor text, dates, and Q&A vote/accepted signals.
+4. **Page kind** (`pagekind.ts`): detected from the document, never supplied by the caller — the page already announces what it is.
+5. **Passages** (`passages.ts`): contiguous runs of nodes sharing a heading path, split only at node boundaries. Then coalesced in `pipeline.ts` to ~900 chars: `buildPassages` segments correctly but produces the wrong *retrieval* unit, because BM25 hands a perfect score to a 123-character fragment.
+6. **Rank** (`rank.ts`): BM25 0.30, exact anchors 0.35, heading match 0.13, structure 0.10, endorsement 0.18, semantic 0. `b = 0.45`, well below v1's 0.75 — document-calibrated length normalization applied to passages prefers captions to explanations.
+7. **Authority** (`authority.ts`): positive (declared homepage, standards body, primary source, project docs, peer citation) and negative (link index, no substance, thin body, self-promotion, social platform, listicle) signals, each stating a mechanism about the *document as parsed*. Reorders strongly, suppresses only at the floor.
+8. **Assemble** (`assemble.ts`): greedy under a character budget, ordered by score **per character**, with document diversity, novelty, coverage re-decided each round, and a relevance floor. It never pads to fill the budget.
 
-1. **Search SearXNG**: Query local SearXNG instance for URLs
-2. **Dedupe URLs**: Remove version duplicates (e.g., `/v1/` vs `/v2/` paths)
-3. **Filter Blocked Domains**: Remove JS-rendered sites (medium.com, npmjs.com, etc.)
-4. **Pre-scrape Title Filtering**: Compute relevance from title + snippet + URL tokens, reject if <40% query token overlap
-5. **Session Deduplication**: Filter URLs already fetched for similar queries (uses `url:sortedTokens` composite keys, so same URL can be re-fetched for different queries)
-6. **Scrape Pages**: Parallel fetch with timeout handling
-7. **Extract Excerpts**: Run extraction pipeline on each page (search mode)
-8. **Compute Relevance**: Weighted scoring (titleMatch 0.35, excerptScore 0.35, urlMatch 0.15, searxngScore 0.15)
-9. **Format Results**: Assemble within total character budget (12000 default)
+**The single most important structural fact:** v1 ranks each page in isolation, so IDF is computed per page. v2 scores every passage from every fetched document in one pool. That is where most of the gain lives.
 
-### Pre-scrape Title Filtering
+**`rerank.ts` is off and stays off.** A cross-encoder was measured in seven configurations and lost 0.054-0.077 recall in every one, with every confidence interval excluding zero, at +2.0s/query. Fine-tuning one on our labels needs ~100k queries; the whole set is 200. The experiment that produced those numbers is not in the repository — it was scratch code with a large ML dependency, and the result is the part worth keeping. `@huggingface/transformers` is not a dependency in any position; `createTransformersScorer` reaches it through a dynamic import if someone installs it.
 
-Before scraping, each SearXNG result is scored by tokenizing the title, snippet, and URL path, then checking what fraction of query tokens appear. Results below 40% (`MIN_PRESCRAPE_RELEVANCE = 0.4`) are filtered to save bandwidth. This prevents scraping pages that are clearly off-topic based on their search result metadata.
+### MCP path
 
-### Session Deduplication
+`src/mcp/orchestrator-v2.ts` is deliberately thin: SERP → session dedup → `searchV2`. **No blocked-domain list, no pre-scrape title filter, no URL dedup.** Those are v1 stages, and `src/eval/adapters/v2.ts` — the thing every measured number describes — hands raw SERP URLs straight to `searchV2`. Adding filters here would mean shipping a pipeline the harness never scored, which is exactly the gap that let the live parser diverge from the eval for weeks. **Keep this path equal to the measured one.**
 
-Session keys use composite `url:sortedTokens` format so:
-- Same URL + same query tokens = skipped (already fetched this content for this query)
-- Same URL + different query tokens = fetched again (extraction is query-dependent)
+Session dedup is the one exception, and it is cross-call state about what the caller has seen, not a judgement about page quality. Keys are `url:sortedQueryTokens` composites, so the same URL is re-fetched for a different query (extraction is query-dependent) but skipped for the same one.
 
-Stemming normalizes variations ("hooks" → "hook"), so near-identical queries dedupe correctly.
+SearXNG is asked for `maxResults * 2` URLs because v2 drops documents that fail to fetch or bottom out on authority.
 
-### Relevance Modes
+`fetchPageV2` exists for **capability**, not scoring: v1's `fetchPage` is a raw HTML GET, so Stack Overflow (403s every UA) and GitHub (JS-rendered) always failed. With a query it runs the same `searchV2` used by search, so ranking and assembly match; without one it returns the whole readable document in order up to 12,000 chars.
 
-- **strict mode** (single-page): Require multiple query terms co-occurrence OR central term + high BM25
-- **search mode** (multi-page): Looser thresholds - single strong sentence OR co-occurrence OR central term
+**`diagnostics` was removed from the MCP schema.** It reported on v1 filter stages this path does not have. An argument a model can pass that silently does nothing is worse than no argument.
 
-### Key Data Types
+### v1 pipeline (baseline only)
+
+Preprocess → segment into sentences → quality gate → tokenize → rank (BM25 0.6 + nine heuristics 0.4) → select anchors → expand context → dedupe → assemble. Heuristic weights: headingPath 0.17, coverage 0.16, proximity 0.14, headingProximity 0.11, structure 0.11, density 0.09, outlier 0.09, metaSection 0.08, position 0.05. Two relevance modes, strict (single page) and search (multi-page). `docs/algorithm-walkthrough.md` traces it end to end.
+
+### Key data types
 
 ```typescript
-// Core content unit after segmentation
-interface Sentence {
-    text: string;
-    tokens: string[];
-    blockIndex: number;
-    sentenceIndex: number;
-    globalIndex: number;
-    headingPath: string[];
-    position: number;      // 0-1 normalized position
-    blockType: BlockType;
+// v2 — src/v2/types.ts
+type NodeKind = "heading" | "prose" | "code" | "list-item" | "table"
+              | "quote" | "callout" | "definition" | "question" | "answer";
+type PageKind = "reference" | "guide" | "qa" | "issue" | "changelog"
+              | "spec" | "blog" | "listicle" | "unknown";
+type DocSource = "html" | "markdown" | "stackexchange" | "github" | "registry";
+
+interface DocNode {
+    kind: NodeKind; text: string; order: number; headingPath: string[];
+    level?: number; lang?: string; links?: DocLink[];
+    votes?: number; accepted?: boolean; author?: string; date?: string;
 }
 
-// After scoring
-interface ScoredSentence extends Sentence {
-    bm25Score: number;
-    heuristicScore: number;
-    combinedScore: number;
+interface Doc {
+    url: string; finalUrl?: string; title: string;
+    kind: PageKind; source: DocSource; nodes: DocNode[];
+    publishedAt?: string; lang?: string; kindEvidence?: string;
 }
 
-// Expanded context around an anchor
-interface Chunk {
-    sentences: Sentence[];
-    anchorIndex: number;
-    score: number;
-    text: string;
-    charCount: number;
-    headingPath: string[];
-}
+// v1 — src/types.ts: Sentence, ScoredSentence, Chunk, RankingResult
+```
 
-// Ranking output with relevance detection
-interface RankingResult {
-    sentences: ScoredSentence[];
-    hasRelevantResults: boolean;
-    metrics: { maxBm25: number; maxCombined: number; cooccurrenceCount: number; };
+## Evaluation harness
+
+The harness came first, before the rewrite: every v1 constant was hand-tuned with no scoreboard, and there was no way to tell whether a change helped. It is dev tooling and it ships in the package (`peeky-eval`), but it needs a corpus and labels the user supplies.
+
+### The three phases
+
+1. **Label, once.** A human or a model reads the full text of every cached page for a query (`peeky-eval dump <queryId>`) and writes the atomic facts a good answer must contain, plus a grade per source. Rubric: `eval/LABELING.md`.
+2. **Replay, offline.** `record` is the only command allowed to touch the network. Everything else replays the frozen corpus, so a run is a pure function of (config, corpus, query set).
+3. **Score, deterministically.** Substring matching over anchors. Macro-averaged over queries.
+
+### Why there is no LLM judge
+
+Judge-to-judge noise is larger than the ~2% effects that need detecting, so an LLM judge would still produce a number and it would still be believed. Intelligence goes in at *authoring* time; scoring stays model-free, which is what makes the loop cost seconds and makes runs a week apart comparable.
+
+### Label format
+
+```jsonc
+{
+  "id": "n2",
+  "text": "Human-readable fact. Never used for matching.",
+  "anchors": [["cleanup", "teardown"], ["dependenc", "deps"]],  // ALL groups; ANY term in a group
+  "pattern": "optional regex, case-insensitive",
+  "window": 220,     // MANDATORY: max chars between first and last matched anchor
+  "weight": 1,       // 2 only when missing it makes the whole result useless
+  "sources": ["https://..."]   // pages you confirmed state this fact
 }
 ```
 
-### Heuristic Scoring (9 metrics)
+Terms are lowercase substrings, so stem-like prefixes (`dependenc`) cover the family without a stemmer at eval time. **`window` is mandatory** — without it a nugget "matches" because its terms are scattered across an unrelated 3k excerpt.
 
-| Metric | Weight | Description |
-|--------|--------|-------------|
-| headingPath | 0.17 | IDF-weighted heading match |
-| coverage | 0.16 | IDF-weighted term coverage |
-| proximity | 0.14 | Minimal spanning window for query terms |
-| headingProximity | 0.11 | Distance to nearest query-matching heading |
-| structure | 0.11 | Block type bonus (headings, code) |
-| density | 0.09 | Query term density in sentence |
-| outlier | 0.09 | Anomaly detection via median/MAD |
-| metaSection | 0.08 | Penalizes intro/conclusion/meta content |
-| position | 0.05 | Early content bonus (piecewise 0.3-1.0) |
+Source grades: `canonical` (the authoritative source), `good`, `acceptable` (partially useful), `bad` (SEO farm, wrong, contentless). **Grade content, never parseability** — a page the pipeline could not read is not thereby a bad source.
 
-## MCP Server
+### Metrics (`src/eval/score.ts`)
 
-**Entry point:** `pnpm mcp` or `npx peeky-search mcp`
+| Metric | Meaning |
+|---|---|
+| `nuggetRecall` | Weighted fraction of labeled facts present in the output. The headline. |
+| `conditionalNuggetRecall` | Restricted to nuggets whose declared source page was returned. Isolates extraction from retrieval. `null`, not 0, when undefined. |
+| `sourcePrecision` | Graded pages that are `canonical`/`good`. Ungraded pages excluded from both sides. |
+| `badRate` | Graded pages that are `bad`. Separate from `sourcePrecision` because `acceptable` ≠ `bad`. `null` when no page is graded. |
+| `canonicalMrr` | 1/rank of the first `canonical` page. |
+| `efficiency` | Matched nuggets per 1k chars. Secondary — recall and source precision are the primary targets. |
 
-**Tools:**
+### The corpus
 
-`peeky_web_search` - Search the web and extract relevant excerpts
-- `query` (string, required): Search query with technical terms. Supports operators: `site:`, `"quotes"`, `-exclude`, `OR`/`AND` (between site: operators)
-- `maxResults` (number, optional): Max pages to scrape (default 5, max 10)
-- `diagnostics` (boolean, optional): Include detailed diagnostics about why pages were filtered or failed (default: false)
-- `sessionKey` (string, optional): Key for cross-call URL deduplication. URLs fetched with the same key won't be re-fetched.
+Content-addressed, three directories: `pages/` (raw HTML), `serp/` (search results with the engine selection stamped on each), `docs/` (serialized v2 `Doc`s from structured adapters, recorded because those adapters cannot run during an offline replay).
 
-`peeky_fetch_page` - Fetch and read a single web page
-- `url` (string, required): The URL to fetch and read
-- `query` (string, optional): Focus extraction on this query. If omitted, returns full cleaned content.
+Two invariants keep the v1-vs-v2 comparison honest:
+- A recorded `Doc` **never replaces** the raw HTML. Both are stored, so both pipelines see the same universe of URLs.
+- `docs/` is optional and lazily created; a corpus recorded before it existed reads back byte-identical, revision included.
 
-**Environment variables:**
-- `SEARXNG_URL`: SearXNG instance URL (default: `http://localhost:8888`)
+**Numbers from two different corpora are not comparable.** Different documents, recorded at different times, possibly off different engines.
 
-**Character budgets:**
-- Per-page: 3000 chars
-- Total: 12000 chars
+### Tranches
 
-**Blocked domains** (JS-rendered or low-quality):
-- medium.com, npmjs.com, researchgate.net, grokipedia.org
-- GitHub repo main pages (but issues/discussions work fine)
+Tranche 1 (60 queries) is the tuning set — ~40 design decisions have seen it. Tranche 2 (140 queries, 134 labeled) is **held out**: labeled after v2 was finished, reported once. That gap is why the honest gain is +0.120 and not the +0.201 tranche 1 showed.
+
+### Commands
+
+```bash
+pnpm eval corpus --check                 # readiness gate: SERPs cached, pages cached, engine mix
+pnpm eval record --tranche 2 --adapters  # ONLY networked command; resumable, idempotent
+pnpm eval run --pipeline v2 --tranche 2 --id t2-v2
+pnpm eval score t2-v2                    # re-score after editing labels
+pnpm eval diff t2-v1 t2-v2               # regressions first
+pnpm eval dump <queryId> [--url <url>]   # the labeling view
+pnpm eval docs                           # structured-doc coverage
+```
+
+`--pipeline oracle` runs a selector that can see the answer key — the ceiling the candidate pool allows (0.963 recall in a median 3,589 chars). Use it to tell "the content was never fetched" apart from "the content was fetched and not selected".
+
+### What is not committed, and why
+
+`eval/labels/`, `eval/corpus/`, `eval/corpus-*/`, `eval/runs/` and `eval/experiments/` are gitignored. The corpus is other people's pages. The labels are a permanent, machine-readable, publicly attributed judgement on named third-party sites — sound method, bad thing to publish from a repository whose job is to distribute search machinery. **Do not commit them, and do not "helpfully" remove them from `.gitignore`.**
+
+Consequence for tooling: `eval/labels/` exists only on the machine that authored it, and git will not warn before an operation destroys ignored files. Treat it as unbacked user data.
 
 ## TypeScript Conventions
 
-### Strict Mode
+### Strict mode
 
-This project uses strict TypeScript with additional safety options:
-- `noUncheckedIndexedAccess`: Array/object index access returns `T | undefined`
-- `exactOptionalPropertyTypes`: Distinguishes between `undefined` and missing properties
+`noUncheckedIndexedAccess` (indexing returns `T | undefined`) and `exactOptionalPropertyTypes` (missing ≠ `undefined`) are both on. The second one is why you see `...(x !== undefined && { x })` spreads instead of `x: x`.
 
-### Type Patterns
+### Type patterns
 
-**Type-only imports** - Separate type imports from value imports:
+**Type-only imports:**
 ```typescript
-import type { Sentence, ScoredSentence } from "../types";
-import { createBM25Scorer } from "./bm25";
+import type { Doc, Passage } from "./types";
+import { buildPassages } from "./passages";
 ```
 
-**Namespace type imports** - For external library types:
-```typescript
-import type * as cheerio from "cheerio";
-import type { AnyNode, Element as CheerioElement } from "domhandler";
-```
-
-**Type guards** - Create predicates for runtime narrowing:
+**Type guards** for runtime narrowing:
 ```typescript
 function isElement(node: AnyNode): node is CheerioElement {
     return node.type === "tag";
 }
-
-function isBlockTag(tagName: string): tagName is BlockType {
-    return /^h[1-6]$/.test(tagName) || tagName === "p" || tagName === "li" || tagName === "pre";
-}
 ```
 
-**String unions** - Constrain known values:
+**String unions** for known values (`NodeKind`, `PageKind`, `DocSource`, `BlockType`).
+
+**Config interfaces with a separate resolved type.** v2's convention: a partial `V2Config` in, a fully-resolved serializable `ResolvedV2Config` recorded on the run, so a run states the exact settings it executed with.
+
 ```typescript
-type BlockType = "h1" | "h2" | "h3" | "h4" | "h5" | "h6" | "p" | "li" | "pre";
+interface RankConfig { weights?: RankWeights; bm25?: Bm25Config; }
+export const DEFAULT_RANK_CONFIG: RankConfig = { /* ... */ };
 ```
 
-**Index signature types** - For dynamic key access:
-```typescript
-interface TermFrequencyMap {
-    [term: string]: number;
-}
-```
+### Null/undefined handling
 
-**Config interfaces with optional properties** - Define defaults separately:
-```typescript
-interface RankerConfig {
-    bm25Weight?: number;
-    heuristicWeight?: number;
-    relevanceMode?: "strict" | "search";
-}
+- Return `null` for "not found"; an empty result for "nothing matched"
+- Always check indexed access: `const item = arr[i]; if (item === undefined) return;`
+- `??` for defaults, `?.` for nested access
+- Explicit `=== undefined` rather than truthiness for numbers
 
-const DEFAULT_CONFIG: Required<Omit<RankerConfig, "bm25Config">> = {
-    bm25Weight: 0.6,
-    heuristicWeight: 0.4,
-    relevanceMode: "strict",
-};
-```
+### Export patterns
 
-### Null/Undefined Handling
-
-- Return `null` for "not found" or "no result"
-- Always check array index access: `const item = arr[i]; if (item === undefined) return;`
-- Use nullish coalescing for defaults: `tf[token] ?? 0`
-- Use optional chaining for nested access: `result.debug?.sentenceCount`
-
-### Export Patterns
-
-- **Named exports** for types and functions: `export type Block`, `export function extractBlocks`
-- **Default exports** only for singleton classes: `export default Logger`
-- **Re-export configs** alongside functions: `export { type AnchorConfig } from "./anchors"`
+- Named exports for types and functions; default export only for singletons (`Logger`)
+- Export the config type and its `DEFAULT_*` const next to the function that consumes them
 
 ## Code Style
 
-### General
-
-- Use `const` by default, `let` only when reassignment is needed
-- Prefer `for...of` over `.forEach()` for loops with early returns or complex logic
-- Use `for` loops with index when you need the index or need to look ahead/behind
-- Collapse whitespace: `.replace(/\s+/g, " ").trim()`
-
-### Function Design
-
-- **Single responsibility**: Each function does one thing
-- **Pure functions** where possible: Same inputs always produce same outputs
-- **Factory pattern** for stateful objects: `createBM25Scorer()` returns a scorer object
-- **Config objects** for functions with many optional parameters
-
-### Naming Conventions
-
-- Config interfaces: `*Config` suffix (e.g., `RankerConfig`)
-- Score interfaces: `*Score` or `*Scores` suffix (e.g., `HeuristicScores`)
-- Result interfaces: `*Result` suffix (e.g., `RankingResult`)
-- Weight interfaces: `*Weights` suffix (e.g., `HeuristicWeights`)
-- Factory functions: `create*` prefix (e.g., `createBM25Scorer`)
-- Computation functions: `calculate*` or `compute*` prefix
+- `const` by default; `let` only when reassigned
+- `for...of` for loops with early returns; indexed `for` when you need to look ahead or behind
+- Single-responsibility, pure functions where possible; factory functions (`create*`) for stateful objects
+- Naming: `*Config`, `*Score`/`*Scores`, `*Result`, `*Weights`, `create*`, `calculate*`/`compute*`
+- Comments explain **why**, and cite the measurement when a constant came from one. Several defaults in `v2/` carry the curve that chose them; keep that when you change them, and update the number rather than deleting the reasoning
 
 ### Determinism
 
-All sorting must be deterministic with two-level ordering:
-1. Primary: Score/metric descending
-2. Tie-break: globalIndex or anchorIndex ascending
+Runs must be reproducible and diffable.
 
-Example:
+- **No `Date.now()`, no `Math.random()`** anywhere in `src/v2/` or `src/eval/`. Passage ids are FNV-1a over the URL for exactly this reason.
+- All sorting is two-level: score descending, then a stable tie-break (`globalIndex`, `anchorIndex`, `url`) ascending.
+
 ```typescript
-rankedSentences.sort((a, b) => {
-    const scoreDiff = b.combinedScore - a.combinedScore;
-    if (scoreDiff !== 0) return scoreDiff;
+sorted.sort((a, b) => {
+    const diff = b.combinedScore - a.combinedScore;
+    if (diff !== 0) return diff;
     return a.globalIndex - b.globalIndex;
 });
 ```
 
-### Algorithm Implementation
+### Error handling
 
-- **Document stats computation**: Pre-compute corpus statistics once, reuse for scoring
-- **Score normalization**: Use min-max normalization to combine scores from different scales
-- **Greedy selection**: For anchor selection and excerpt assembly, use greedy algorithms with diversity constraints
-- **Alternating expansion**: Chunk expansion adds context before/after symmetrically
-- **Timeout handling**: Use AbortController pattern for fetch operations
-
-### Error Handling
-
-- Return empty results for edge cases (empty input, no matches) rather than throwing
-- Check preconditions early and return early
-- Use explicit undefined checks rather than truthy/falsy tests for numbers
-- Wrap network operations in try/catch with descriptive error messages
-
-## Build Configuration
-
-**tsup.config.ts:**
-- Entries: `src/cli.ts`, `src/index.ts`, `src/mcp/server.ts`
-- Format: ESM only
-- Target: node20
-- Clean build enabled
-
-**tsconfig.json:**
-- Module: ESNext
-- Target: esnext
-- Strict mode with `noUncheckedIndexedAccess` and `exactOptionalPropertyTypes`
-- Declaration files generated (.d.ts)
-- Source maps enabled
+- Return empty results for edge cases rather than throwing; check preconditions early
+- Wrap network operations in try/catch with a descriptive message; `AbortController` for timeouts
+- An error the caller can act on beats a silent empty result — the MCP path returns a message explaining that SearXNG's engines rate-limit into empty 200s
 
 ## Testing
 
-### Framework
-
-Uses **Vitest** for unit and integration testing:
-- Config: `vitest.config.ts`
-- Test pattern: `src/**/*.test.ts` and `src/**/__tests__/**/*.ts`
-- Environment: Node
-- Timeout: 10 seconds per test
-
-### Test Organization
-
-Tests are co-located with source code in `__tests__/` directories:
-```
-src/module/
-├── feature.ts
-└── __tests__/
-    └── feature.test.ts
-```
-
-Integration tests use HTML fixtures from `test-fixtures/` directory.
-
-### Running Tests
+**Vitest.** Config `vitest.config.ts`, pattern `src/**/*.test.ts` and `src/**/__tests__/**/*.ts`, node environment, 10s timeout. 900 tests.
 
 ```bash
-pnpm test           # Watch mode - reruns on file changes
-pnpm test:run       # Single run - CI/pre-commit
-pnpm test:coverage  # With V8 coverage report
+pnpm test           # watch
+pnpm test:run       # single run
+pnpm test:coverage  # V8 coverage into coverage/
 ```
 
-### Test Conventions
+Tests are co-located in `__tests__/` next to the code. Describe/it/expect with explicit imports, arrange-act-assert separated by blank lines, fixtures loaded in `beforeAll`. Integration tests use `test-fixtures/*.html`; `src/v2/__tests__/fixtures/` holds v2's parser fixtures.
 
-**Describe/it/expect pattern** with explicit imports:
-```typescript
-import { describe, it, expect } from "vitest";
-import { myFunction } from "../myModule";
+**`src/mcp/orchestrator-v2.ts` has no test coverage at all.** It is the module that ships. That is the highest-value gap in the suite, along with a test pinning the live fetch path and the eval adapter to the same parser output.
 
-describe("myFunction", () => {
-    it("handles basic case", () => {
-        const result = myFunction("input");
+## Build Configuration
 
-        expect(result).toBe("expected");
-    });
-});
-```
+**tsup** (`tsup.config.ts`): entries `src/cli.ts`, `src/index.ts`, `src/mcp/server.ts`, `src/eval/cli.ts`; ESM only; target node20; clean build.
 
-**Arrange-Act-Assert** structure with blank lines:
-```typescript
-it("extracts relevant excerpts", () => {
-    // Arrange
-    const html = "<p>content</p>";
-    const query = "content";
+**tsconfig**: ESNext modules, esnext target, strict plus the two options above, declarations and source maps on.
 
-    // Act
-    const result = extractExcerpts(html, query);
+## Gotchas
 
-    // Assert
-    expect(result.excerpts.length).toBeGreaterThan(0);
-});
-```
+### The parser divergence — the most expensive class of bug on this project
 
-**Integration tests** load fixtures in `beforeAll`:
-```typescript
-let fixtureHtml: string;
+The eval adapter parsed with `v2/parse.ts` while the live HTML fetcher parsed with v1's `preprocessHtml` + `htmlToNodes`. **Every measured number described a parser no user ran**, and they diverged exactly where it was most expensive: `parse.ts` exists to avoid v1's `/comment/` boilerplate pattern, which deletes every answer on a Q&A page, and the live path reintroduced it. Fixed — the live adapter now calls `parseHtml`. **There is still no test pinning the two together.**
 
-beforeAll(() => {
-    fixtureHtml = readFileSync(join(fixturesDir, "fixture.html"), "utf-8");
-});
-```
+The general form, which has recurred five times here: *a gain, a corpus, or a parser measured against a weak proxy evaporates, inverts, or turns out to describe something else when you look at the real thing.* Check the instrument, especially when it reports success.
 
-### Test Categories
+### Sweeping UI text near code
 
-| Category | Location | Purpose |
-|----------|----------|---------|
-| Unit | `src/*/\__tests__/*.test.ts` | Test individual functions in isolation |
-| Integration | `src/\__tests__/pipeline.integration.test.ts` | Test full extraction pipeline with fixtures |
+`removeUIElements` sweeps `a, span, div, p` anywhere in the container. Syntax highlighters wrap every token in its own span, so the sweep once tested code identifiers against UI patterns and `/^(scroll\s*to\s*)?top$/i` — whose prefix is optional, reducing it to `/^top$/i` — deleted every `top` in a CSS block. Code is now exempt, but the other patterns are loosely written and `copy`/`share`/`feedback` remain hazards for prose.
 
-### Coverage
+### Environment
 
-V8 coverage with reporters: text (console) and html (`coverage/` directory)
-- Includes: `src/**/*.ts`
-- Excludes: test files
+- **SearXNG's upstream engines rate-limit under sustained load and then answer HTTP 200 with an empty result list.** Not an error, not on a timer. The recorder paces at 3000ms and aborts after 5 consecutive failures; the MCP path returns a message saying so rather than "no results".
+- **An empty SERP is an error and is never cached.** A 200-with-no-results is a statement about when you asked, not about the query.
+- **Stack Overflow 403s every User-Agent.** Only `api.stackexchange.com` works — 300 requests/day unauthenticated, and a question costs two.
+- `grep` returns nothing on `src/v2/parse.ts` (1300+ lines). Cause unknown; `sed`, `wc` and node all work.
+- Node runs `.mts` directly but cannot resolve this project's extensionless relative imports. To exercise project modules from a scratch script, write a temporary vitest file under `src/` and delete it after.
+
+### Known v1 bugs, deliberately unfixed
+
+Fixing these makes the baseline not-v1. Leave them alone, including during a cleanup pass:
+- `deduplicateUrls` runs **before** the score sort, despite its comment
+- Dead `?? url` null-coalesce in `processPage`
+- Diagnostics truncation under-counts

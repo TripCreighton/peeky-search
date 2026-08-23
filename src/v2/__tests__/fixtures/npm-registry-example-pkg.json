@@ -1,0 +1,509 @@
+{
+  "_id": "example-pkg",
+  "_rev": "17-b1f96ea3c62e53b66584e3743a1945a3",
+  "name": "example-pkg",
+  "dist-tags": {
+    "latest": "3.0.1"
+  },
+  "versions": {
+    "0.1.0": {
+      "name": "example-pkg",
+      "version": "0.1.0",
+      "keywords": [
+        "array",
+        "count",
+        "even",
+        "filter",
+        "integer",
+        "math",
+        "numeric",
+        "odd",
+        "string"
+      ],
+      "license": "MIT",
+      "_id": "example-pkg@0.1.0",
+      "homepage": "https://github.com/example-org/example-pkg",
+      "bugs": {
+        "url": "https://github.com/example-org/example-pkg/issues"
+      },
+      "main": "index.js",
+      "_from": ".",
+      "files": [
+        "index.js"
+      ],
+      "_shasum": "1031f78cac2710cba44820e73c898571bb83d3c3",
+      "engines": {
+        "node": ">=0.10.0"
+      },
+      "scripts": {
+        "test": "mocha"
+      },
+      "repository": {
+        "url": "https://github.com/example-org/example-pkg",
+        "type": "git"
+      },
+      "_npmVersion": "2.5.1",
+      "description": "Returns true if the given number is odd.",
+      "directories": {},
+      "_nodeVersion": "0.12.0",
+      "dependencies": {
+        "is-number": "^1.1.0"
+      },
+      "devDependencies": {
+        "mocha": "*",
+        "should": "*"
+      }
+    },
+    "0.1.1": {
+      "name": "example-pkg",
+      "version": "0.1.1",
+      "keywords": [
+        "array",
+        "count",
+        "even",
+        "filter",
+        "integer",
+        "is",
+        "math",
+        "numeric",
+        "odd",
+        "string"
+      ],
+      "license": "MIT",
+      "_id": "example-pkg@0.1.1",
+      "homepage": "https://github.com/example-org/example-pkg",
+      "bugs": {
+        "url": "https://github.com/example-org/example-pkg/issues"
+      },
+      "main": "index.js",
+      "verb": {
+        "toc": false,
+        "lint": {
+          "reflinks": true
+        },
+        "tasks": [
+          "readme"
+        ],
+        "layout": "default",
+        "plugins": [
+          "gulp-format-md"
+        ],
+        "related": {
+          "list": []
+        },
+        "reflinks": [
+          "verb",
+          "verb-generate-readme"
+        ]
+      },
+      "_from": ".",
+      "files": [
+        "index.js"
+      ],
+      "_shasum": "51508f7d39eafb0282fbb98957b2d1d28e72a3e7",
+      "engines": {
+        "node": ">=0.10.0"
+      },
+      "gitHead": "b8fc75839e341f23e2d7cb2d4b6a173ccbc1e364",
+      "scripts": {
+        "test": "mocha"
+      },
+      "repository": {
+        "url": "git+https://github.com/example-org/example-pkg.git",
+        "type": "git"
+      },
+      "_npmVersion": "3.10.3",
+      "description": "Returns true if the given number is odd.",
+      "directories": {},
+      "_nodeVersion": "6.7.0",
+      "dependencies": {
+        "is-number": "^1.1.0"
+      },
+      "devDependencies": {
+        "mocha": "^3.2.0",
+        "gulp-format-md": "^0.1.11"
+      }
+    },
+    "0.1.2": {
+      "name": "example-pkg",
+      "version": "0.1.2",
+      "keywords": [
+        "array",
+        "count",
+        "even",
+        "filter",
+        "integer",
+        "is",
+        "math",
+        "numeric",
+        "odd",
+        "string"
+      ],
+      "license": "MIT",
+      "_id": "example-pkg@0.1.2",
+      "homepage": "https://github.com/example-org/example-pkg",
+      "bugs": {
+        "url": "https://github.com/example-org/example-pkg/issues"
+      },
+      "main": "index.js",
+      "verb": {
+        "toc": false,
+        "lint": {
+          "reflinks": true
+        },
+        "tasks": [
+          "readme"
+        ],
+        "layout": "default",
+        "plugins": [
+          "gulp-format-md"
+        ],
+        "related": {
+          "list": []
+        },
+        "reflinks": [
+          "verb",
+          "verb-generate-readme"
+        ]
+      },
+      "_from": ".",
+      "files": [
+        "index.js"
+      ],
+      "_shasum": "bc573b5ce371ef2aad6e6f49799b72bef13978a7",
+      "engines": {
+        "node": ">=0.10.0"
+      },
+      "gitHead": "59270f5a05b03bdeb0b06c95d922deb59ae31923",
+      "scripts": {
+        "test": "mocha"
+      },
+      "repository": {
+        "url": "git+https://github.com/example-org/example-pkg.git",
+        "type": "git"
+      },
+      "_npmVersion": "4.6.1",
+      "description": "Returns true if the given number is odd.",
+      "directories": {},
+      "_nodeVersion": "7.7.3",
+      "dependencies": {
+        "is-number": "^3.0.0"
+      },
+      "devDependencies": {
+        "mocha": "^3.2.0",
+        "gulp-format-md": "^0.1.11"
+      }
+    },
+    "1.0.0": {
+      "name": "example-pkg",
+      "version": "1.0.0",
+      "keywords": [
+        "array",
+        "count",
+        "even",
+        "filter",
+        "integer",
+        "is",
+        "math",
+        "numeric",
+        "odd",
+        "string"
+      ],
+      "license": "MIT",
+      "_id": "example-pkg@1.0.0",
+      "homepage": "https://github.com/example-org/example-pkg",
+      "bugs": {
+        "url": "https://github.com/example-org/example-pkg/issues"
+      },
+      "main": "index.js",
+      "verb": {
+        "toc": false,
+        "lint": {
+          "reflinks": true
+        },
+        "tasks": [
+          "readme"
+        ],
+        "layout": "default",
+        "plugins": [
+          "gulp-format-md"
+        ],
+        "related": {
+          "list": [
+            "exponential-moving-average",
+            "is-even",
+            "sma"
+          ]
+        }
+      },
+      "_from": ".",
+      "files": [
+        "index.js"
+      ],
+      "_shasum": "3b8a932eb028b3775c39bb09e91767accdb69088",
+      "engines": {
+        "node": ">=0.10.0"
+      },
+      "gitHead": "71747ca9a8324f9201205ad46a09fd3e60250edb",
+      "scripts": {
+        "test": "mocha"
+      },
+      "repository": {
+        "url": "git+https://github.com/example-org/example-pkg.git",
+        "type": "git"
+      },
+      "_npmVersion": "4.6.1",
+      "description": "Returns true if the given number is odd.",
+      "directories": {},
+      "_nodeVersion": "7.7.3",
+      "dependencies": {
+        "is-number": "^3.0.0"
+      },
+      "devDependencies": {
+        "mocha": "^3.2.0",
+        "gulp-format-md": "^0.1.11"
+      }
+    },
+    "2.0.0": {
+      "name": "example-pkg",
+      "version": "2.0.0",
+      "keywords": [
+        "array",
+        "count",
+        "even",
+        "filter",
+        "integer",
+        "is",
+        "math",
+        "numeric",
+        "odd",
+        "string"
+      ],
+      "license": "MIT",
+      "_id": "example-pkg@2.0.0",
+      "homepage": "https://github.com/example-org/example-pkg",
+      "bugs": {
+        "url": "https://github.com/example-org/example-pkg/issues"
+      },
+      "main": "index.js",
+      "verb": {
+        "toc": false,
+        "lint": {
+          "reflinks": true
+        },
+        "tasks": [
+          "readme"
+        ],
+        "layout": "default",
+        "plugins": [
+          "gulp-format-md"
+        ],
+        "related": {
+          "list": [
+            "exponential-moving-average",
+            "is-even",
+            "sma"
+          ]
+        }
+      },
+      "files": [
+        "index.js"
+      ],
+      "engines": {
+        "node": ">=0.10.0"
+      },
+      "gitHead": "b29f7e82fc879ad23e925fd669f624c131e3e307",
+      "scripts": {
+        "test": "mocha"
+      },
+      "repository": {
+        "url": "git+https://github.com/example-org/example-pkg.git",
+        "type": "git"
+      },
+      "_npmVersion": "5.5.1",
+      "description": "Returns true if the given number is odd.",
+      "directories": {},
+      "_nodeVersion": "8.7.0",
+      "dependencies": {
+        "is-number": "^4.0.0"
+      },
+      "devDependencies": {
+        "mocha": "^4.0.1",
+        "gulp-format-md": "^1.0.0"
+      }
+    },
+    "3.0.0": {
+      "name": "example-pkg",
+      "version": "3.0.0",
+      "keywords": [
+        "array",
+        "count",
+        "even",
+        "filter",
+        "integer",
+        "is",
+        "math",
+        "numeric",
+        "odd",
+        "string"
+      ],
+      "license": "MIT",
+      "_id": "example-pkg@3.0.0",
+      "homepage": "https://github.com/example-org/example-pkg",
+      "bugs": {
+        "url": "https://github.com/example-org/example-pkg/issues"
+      },
+      "main": "index.js",
+      "verb": {
+        "toc": false,
+        "lint": {
+          "reflinks": true
+        },
+        "tasks": [
+          "readme"
+        ],
+        "layout": "default",
+        "plugins": [
+          "gulp-format-md"
+        ],
+        "related": {
+          "list": [
+            "exponential-moving-average",
+            "is-even",
+            "sma"
+          ]
+        }
+      },
+      "files": [
+        "index.js"
+      ],
+      "engines": {
+        "node": ">=4"
+      },
+      "gitHead": "75e749a7926a3ae2dfd5b2eaab6d15956f73381a",
+      "scripts": {
+        "test": "mocha"
+      },
+      "repository": {
+        "url": "git+https://github.com/example-org/example-pkg.git",
+        "type": "git"
+      },
+      "_npmVersion": "6.0.1",
+      "description": "Returns true if the given number is odd, and is an integer that does not exceed the JavaScript MAXIMUM_SAFE_INTEGER.",
+      "directories": {},
+      "_nodeVersion": "10.0.0",
+      "dependencies": {
+        "is-number": "^6.0.0"
+      },
+      "_hasShrinkwrap": false,
+      "devDependencies": {
+        "mocha": "^3.5.3",
+        "gulp-format-md": "^1.0.0"
+      }
+    },
+    "3.0.1": {
+      "name": "example-pkg",
+      "version": "3.0.1",
+      "keywords": [
+        "array",
+        "count",
+        "even",
+        "filter",
+        "integer",
+        "is",
+        "math",
+        "numeric",
+        "odd",
+        "string"
+      ],
+      "license": "MIT",
+      "_id": "example-pkg@3.0.1",
+      "homepage": "https://github.com/example-org/example-pkg",
+      "bugs": {
+        "url": "https://github.com/example-org/example-pkg/issues"
+      },
+      "main": "index.js",
+      "verb": {
+        "toc": false,
+        "lint": {
+          "reflinks": true
+        },
+        "tasks": [
+          "readme"
+        ],
+        "layout": "default",
+        "plugins": [
+          "gulp-format-md"
+        ],
+        "related": {
+          "list": [
+            "exponential-moving-average",
+            "is-even",
+            "sma"
+          ]
+        }
+      },
+      "files": [
+        "index.js"
+      ],
+      "engines": {
+        "node": ">=4"
+      },
+      "gitHead": "a80ee0d831a8ee69f1fad5b4673491847975eb26",
+      "scripts": {
+        "test": "mocha"
+      },
+      "repository": {
+        "url": "git+https://github.com/example-org/example-pkg.git",
+        "type": "git"
+      },
+      "_npmVersion": "6.0.1",
+      "description": "Returns true if the given number is odd, and is an integer that does not exceed the JavaScript MAXIMUM_SAFE_INTEGER.",
+      "directories": {},
+      "_nodeVersion": "10.0.0",
+      "dependencies": {
+        "is-number": "^6.0.0"
+      },
+      "_hasShrinkwrap": false,
+      "devDependencies": {
+        "mocha": "^3.5.3",
+        "gulp-format-md": "^1.0.0"
+      }
+    }
+  },
+  "time": {
+    "created": "2015-02-24T05:53:13.392Z",
+    "modified": "2026-04-14T14:26:11.557Z",
+    "0.1.0": "2015-02-24T05:53:13.392Z",
+    "0.1.1": "2016-12-07T07:18:01.205Z",
+    "0.1.2": "2017-05-27T13:04:38.481Z",
+    "1.0.0": "2017-05-27T18:18:17.696Z",
+    "2.0.0": "2017-11-01T05:35:04.104Z",
+    "3.0.0": "2018-05-30T18:00:55.554Z",
+    "3.0.1": "2018-05-31T20:04:53.306Z"
+  },
+  "bugs": {
+    "url": "https://github.com/example-org/example-pkg/issues"
+  },
+  "license": "MIT",
+  "homepage": "https://github.com/example-org/example-pkg",
+  "keywords": [
+    "array",
+    "count",
+    "even",
+    "filter",
+    "integer",
+    "is",
+    "math",
+    "numeric",
+    "odd",
+    "string"
+  ],
+  "repository": {
+    "url": "git+https://github.com/example-org/example-pkg.git",
+    "type": "git"
+  },
+  "description": "Returns true if the given number is odd, and is an integer within the safe range.",
+  "readme": "# example-pkg\n\nReturns true if the given number is odd.\n\n## Usage\n\n```js\nconst isOdd = require(\"example-pkg\");\nisOdd(1); //=> true\n```",
+  "readmeFilename": "README.md"
+}

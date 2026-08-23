@@ -1,121 +1,91 @@
-# Peeky Search
+# peeky-search
 
 [![npm version](https://img.shields.io/npm/v/peeky-search.svg)](https://www.npmjs.com/package/peeky-search)
 [![license](https://img.shields.io/npm/l/peeky-search.svg)](https://github.com/TripCreighton/peeky-search/blob/main/LICENSE)
 
-**Find the answer you're actually looking for.**
+A local web search server for coding agents. It runs your query through a
+SearXNG instance on your machine, fetches the result pages, and returns the
+passages that answer the question — **the sources' own words, quoted, with the
+URL they came from.**
 
-Built-in web search gives you summaries. peeky-search gives you the Stack Overflow answer with the code fix, the GitHub discussion where someone debugged your exact issue, the documentation paragraph that actually explains the edge case.
+There is no summarization step. Nothing is paraphrased, nothing is passed
+through a second model, and no query leaves your machine except to the search
+engines SearXNG queries on your behalf.
 
-No LLM summarization layer. Just IR-based extraction (BM25 + structural heuristics) that surfaces relevant passages directly from sources.
+Install it as an MCP server and your agent gets two tools: `peeky_web_search`
+and `peeky_fetch_page`.
 
-```bash
-npx peeky-search --search --query "zod transform vs refine" --max 3
+## Example
+
+```console
+$ npx peeky-search --search --query "RuntimeError Event loop is closed asyncio python" --max 3 --pipeline v2
 ```
 
 ```
-# Search Results for: "zod transform vs refine"
+3 pages for "RuntimeError Event loop is closed asyncio python"
 
-Found 3 of 3 pages with relevant content.
+---
 
-## Zod: .transform() vs .refine() - Stack Overflow
-Source: https://stackoverflow.com/questions/73715295
+## ["Asyncio Event Loop is Closed" when getting loop](https://stackoverflow.com/questions/45600579/asyncio-event-loop-is-closed-when-getting-loop)
 
-Use `.refine()` when you want to add custom validation logic that returns
-true/false. Use `.transform()` when you want to modify the parsed value
-before it's returned.
+When trying to run the asyncio hello world code example given in the docs:
+import asyncio
 
-### Key difference
-`.refine()` validates and returns the same type. `.transform()` can change
-the output type entirely:
+async def hello_world():
+    print("Hello World!")
 
-const stringToNumber = z.string().transform(val => parseInt(val));
-// Input: string, Output: number
+loop = asyncio.get_event_loop()
+loop.run_until_complete(hello_world())
+loop.close()
+I get the error:
+RuntimeError: Event loop is closed
+I am using python 3.5.3.
+
+You have already called loop.close() before you ran that sample piece of code,
+on the global event loop:
+>>> import asyncio
+>>> asyncio.get_event_loop().close()
+>>> asyncio.get_event_loop().is_closed()
+True
+...
 ```
 
-## Who this is for
+That page is Stack Overflow, which answers every scraper with HTTP 403.
+peeky reads it through the Stack Exchange API instead, so the question and its
+accepted answer arrive with vote counts attached.
 
-- **Developers debugging weird issues** - surfaces the GitHub discussion or Stack Overflow answer with your exact error
-- **Agent and RAG builders** - verifiable excerpts with source attribution, not synthesized summaries
-- **Anyone tired of "here's an overview"** - when you need the specific fix, not a tutorial
+## Why
 
-## Evidence vs Summaries
+Built-in web search tools summarize. A summary is a second model's reading of a
+page, and the details it drops are disproportionately the ones you needed: the
+version the fix applies to, the flag that changes the behaviour, the caveat in
+the third comment.
 
-Built-in web search tools use an LLM to **summarize** pages. You get a polished overview, but edge cases get smoothed away.
+peeky returns evidence instead. You read what the maintainer actually wrote, and
+you can follow the URL to check it.
 
-peeky-search extracts **evidence** - the actual passages from sources, ranked by relevance. You see exactly what the docs say, what the maintainer wrote in that GitHub thread, what the accepted Stack Overflow answer recommends.
+|  | peeky-search | Built-in web search |
+|---|---|---|
+| Output | Verbatim source excerpts | Model-written summary |
+| Attribution | Per-passage source URL and heading path | "According to my search…" |
+| Extra model calls | None | One hidden summarization pass |
+| Where queries go | Your machine → SearXNG → engines | Through your AI provider |
+| Blocked sources | Reads Stack Exchange, GitHub, npm via their APIs | Varies |
 
-| What you get | peeky-search | Built-in WebSearch |
-|--------------|--------------|---------------------|
-| Output | Source excerpts you can verify | AI-interpreted summary |
-| Edge cases | Surfaces gotchas from real discussions | Often summarized away |
-| Attribution | Know exactly which page said what | "According to my search..." |
-| LLM processing | None - pure IR extraction | Hidden summarization call |
-| Speed | ~3-4 seconds | ~20-25 seconds |
+Concretely: the pages behind a five-result search hold roughly 900 KB of HTML
+between them (mean 189 KB per page, sampled over 639 cached pages). peeky
+returns 7–11 KB of text, in about five seconds on a warm SearXNG.
 
-### What peeky surfaces that summaries miss
+## Install
 
-Summaries give you the consensus. peeky gives you the specific details that actually solve your problem:
-
-| Query | What peeky extracted |
-|-------|---------------------|
-| vitest mock timers | Edge case: `vi.stubGlobal` for mocking undefined properties |
-| node.js backpressure | The `_readableState.pipes.once('drain')` hack for Transform streams |
-| Zod .transform() | The `as const satisfies` pattern, `readonly` array gotchas |
-| Next.js hydration error | Material UI gotcha: `Typography` defaults to `<p>` |
-| CVE-2024-3094 xz backdoor | Links to Filippo Valsorda's analysis and xzbot reproduction repo |
-| Bun vs better-sqlite3 | GitHub discussion where maintainer debunks the benchmark methodology |
-
-These are the details buried in page 3 of search results, in comment threads, in "Related" sidebars - the stuff a human would find by clicking around, but that summaries gloss over.
-
-### Example: Finding the Real Answer
-
-For `Bun SQLite vs better-sqlite3 performance`:
-
-**Built-in WebSearch** returned Bun's official claims (3-6x faster) and some general skepticism.
-
-**peeky-search** found the actual GitHub discussion where a better-sqlite3 maintainer breaks down why the benchmark is misleading - showing that for real SQLite-heavy queries, better-sqlite3 can actually be faster.
-
-That's the difference: summaries give you the marketing. peeky gives you the GitHub thread where someone actually investigated.
-
-## Installation
-
-Requires [Docker](https://docker.com) to run the SearXNG search backend.
+Requires [Docker](https://docker.com) (for SearXNG) and Node 20+.
 
 ```bash
 npx peeky-search setup
 ```
 
-This will:
-1. Check prerequisites (Docker installed and running)
-2. Start a local SearXNG instance in Docker
-3. Output the MCP config to add to your client
-
-Then add the config to your MCP client and restart it.
-
-### Privacy
-
-peeky-search runs entirely locally:
-- **SearXNG** runs in Docker on your machine
-- **Searches don't hit Anthropic, OpenAI, or any third party**
-- No query logging, no telemetry, no data collection
-
-Built-in web search tools route queries through the AI provider. You have no visibility into what happens to those queries.
-
-### Commands
-
-```bash
-npx peeky-search setup              # One-time setup
-npx peeky-search setup --port 9999  # Use custom port
-npx peeky-search status             # Check if SearXNG is running
-npx peeky-search start              # Start SearXNG
-npx peeky-search stop               # Stop SearXNG
-npx peeky-search uninstall          # Remove everything
-```
-
-### MCP Client Configuration
-
-After running setup, add this to your MCP client config:
+That checks prerequisites, starts a local SearXNG container, and prints the MCP
+config to add to your client.
 
 ```json
 {
@@ -123,236 +93,276 @@ After running setup, add this to your MCP client config:
     "peeky-search": {
       "command": "npx",
       "args": ["-y", "peeky-search", "mcp"],
-      "env": {
-        "SEARXNG_URL": "http://localhost:8888"
-      }
+      "env": { "SEARXNG_URL": "http://localhost:8888" }
     }
   }
 }
 ```
 
-**Where to add this:**
-- **Claude Code**: Run `claude mcp add` and provide the config, or edit `~/.claude/settings.json`
-- **Cursor**: Add to `.cursor/mcp.json` in your project or `~/.cursor/mcp.json` globally
-- **Other MCP clients**: Check your client's documentation for where MCP server configs go
+- **Claude Code** — `claude mcp add`, or edit `~/.claude/settings.json`
+- **Cursor** — `.cursor/mcp.json` in the project, or `~/.cursor/mcp.json`
+- **Others** — see your client's MCP documentation
 
-## Usage
+Managing the container:
 
-### MCP Tools
-
-Once configured, your MCP client will have access to two tools:
-
-#### `peeky_web_search`
-
-Search the web and get extracted excerpts.
-
-**Input:**
-```json
-{
-  "query": "react useEffect cleanup function",
-  "maxResults": 5,
-  "diagnostics": false
-}
+```bash
+npx peeky-search status      # is SearXNG running?
+npx peeky-search start
+npx peeky-search stop
+npx peeky-search setup --port 9999
+npx peeky-search uninstall
 ```
+
+> **Known issue:** the `SEARXNG_URL` environment variable is emitted by `setup`
+> but is not yet read by the server, which always uses `http://localhost:8888`.
+> A non-default `--port` therefore does not work end to end. Tracked below under
+> [Limitations](#limitations).
+
+## Tools
+
+### `peeky_web_search`
+
+Search, fetch the results, and return the passages that answer the query.
 
 | Parameter | Type | Description |
-|-----------|------|-------------|
-| `query` | string | Search query. Supports `site:`, `"quotes"`, `-exclude` |
-| `maxResults` | number | Pages to fetch (default 5, max 10) |
-| `diagnostics` | boolean | Include filtering details (default false) |
-| `sessionKey` | string | Key for cross-call deduplication. Same URL can be re-fetched for different queries (uses `url:tokens` composite keys). |
+|---|---|---|
+| `query` | string, required | Supports `site:`, `"exact phrase"`, `-exclude`, and `OR`/`AND` between `site:` operators |
+| `maxResults` | number | Pages to return. Default 5, clamped to 1–10 |
+| `sessionKey` | string | Deduplicates across calls. Keys are `url:queryTokens`, so the same page is re-fetched for a different question but skipped for the same one |
 
-**Output:** Extracted excerpts from multiple pages with source URLs.
+Returns one section per page: the title as a link, then each excerpt preceded by
+the heading path it sits under. Code blocks keep their fences.
 
-#### `peeky_fetch_page`
+### `peeky_fetch_page`
 
-Fetch and read a single web page.
-
-**Input:**
-```json
-{
-  "url": "https://react.dev/learn/synchronizing-with-effects",
-  "query": "cleanup function"
-}
-```
+Read one page.
 
 | Parameter | Type | Description |
-|-----------|------|-------------|
-| `url` | string | The URL to fetch and read |
-| `query` | string | Optional. Focus extraction on this query. If omitted, returns full cleaned content. |
+|---|---|---|
+| `url` | string, required | The page to read |
+| `query` | string | Return only the passages answering it. Omit for the whole readable document in order, up to 12,000 characters |
 
-**Output:** Cleaned page content in markdown format with title and source URL. If `query` is provided, returns focused excerpts relevant to the query.
+This is the tool to reach for when a search excerpt looks promising but thin.
+It resolves Stack Exchange, GitHub, and npm URLs through their APIs, and reads
+documentation sites that publish markdown from source, so it opens pages that
+refuse ordinary fetching.
 
-### CLI
+## How it works
 
-**Search mode** (uses SearXNG):
-```bash
-npx peeky-search --search --query "prisma vs drizzle orm" --max 5
+```
+query ──► parse: operators, error strings, code symbols, versions
+   │
+SearXNG ──► candidate URLs (16 deep)
+              │
+              ▼
+   fetch: Stack Exchange API · GitHub API · npm registry
+          · markdown sibling · generic HTML
+              │
+              ▼
+   parse to a node tree ──► detect page kind ──► build passages
+              │
+              ▼
+   score every passage from every page in ONE pool
+     BM25 · exact anchors · heading match · structure · endorsement
+              │
+              ▼
+   score each source's authority, and multiply it in
+              │
+              ▼
+   assemble under budget
+     score-per-character · document diversity · novelty · coverage
 ```
 
-**URL mode** (extract from a specific page):
-```bash
-npx peeky-search --url "https://docs.example.com/auth" --query "JWT refresh tokens"
-```
+Four decisions do most of the work:
 
-**Fetch mode** (get cleaned page content):
+**One candidate pool.** Passages from every fetched document are scored
+together, so IDF is computed across the whole candidate set for the query. Rank
+each page separately — as v1 did — and IDF is computed over the sentences of a
+single page, where almost every term is rare and BM25 degenerates into a term
+count. Pooling is what lets a strong passage on the fourth result beat a
+mediocre one on the first.
+
+**Passages, not sentences.** A passage is a run of nodes under one heading,
+split only at node boundaries, so a code block is never cut in half. Scoring
+them directly removes the anchor → expand → deduplicate round trip: there is
+nothing to reassemble because nothing was taken apart.
+
+**Source authority, scored separately.** Text-match alone rewards pages
+optimized to look like an answer, which is exactly what a content farm is built
+to do. Authority is scored independently — declared homepage, standards body,
+primary source, peer citation on one side; link-only body, no substantive
+paragraph, thin content, self-promotion on the other — and multiplied into the
+ranking. Every negative signal describes the document as parsed rather than
+naming a host, because a hostname blocklist fits the set you tuned it on and
+transfers to nothing.
+
+**Structured sources before scraping.** Where an API exists, it is used. That is
+how Stack Overflow is readable at all, and it is where the accepted-answer flag
+and vote counts come from.
+
+## Results
+
+peeky ships an evaluation harness, and the pipeline above (v2) was built against
+it. The numbers below are from **134 held-out queries** — labelled after v2 was
+finished, scored once — against v1, the sentence-level BM25 pipeline it replaced.
+
+| Metric | v1 | v2 | |
+|---|---|---|---|
+| Nugget recall | 0.338 | **0.458** | Did the output contain the facts the query needed? |
+| Conditional recall | 0.463 | **0.526** | Same, over pages that were returned — extraction, not retrieval |
+| Source precision | 0.737 | **0.774** | Returned pages graded `canonical` or `good` |
+| Bad rate | 0.041 | 0.042 | Returned pages graded `bad` |
+| Canonical MRR | 0.237 | **0.325** | How high the authoritative source lands |
+| Efficiency | **0.327** | 0.297 | Matched facts per 1,000 characters |
+| Mean characters | **7,102** | 10,543 | |
+
+68 queries improved, 33 regressed, 33 were unchanged.
+
+Four things worth stating plainly:
+
+- The same measurement on the **tuning** set read +0.201. That number was
+  inflated by overfitting; +0.120 is the one to quote.
+- **Bad rate is a tie.** The problem that motivated the project — content farms
+  outranking official documentation — is not solved. v2 surfaces the
+  authoritative source higher, but it does not filter the farms out.
+- v2 spends about 50% more characters to get there.
+- An oracle selecting from the same candidate pool, allowed to see the answer
+  key, reaches 0.963 recall in a median of 3,589 characters. Every fact is
+  already in the pool. What v2 misses, it misses on ordering.
+
+## CLI
+
+The CLI exists for debugging and development; the MCP server is the product.
+
 ```bash
+# what an agent gets
+npx peeky-search --search --query "prisma nested writes" --max 5 --pipeline v2
+
+# read one page
 npx peeky-search --fetch --url "https://react.dev/learn"
 npx peeky-search --fetch --url "https://react.dev/learn" --query "useState"
+
+# extract from a local file
+npx peeky-search --query "authentication" --file page.html --debug
 ```
 
-**File mode** (extract from local HTML):
+`--search` defaults to the v1 pipeline for backward compatibility; pass
+`--pipeline v2` to see what the MCP server actually returns. `--fetch`, `--url`
+and `--file` still run v1.
+
+## Evaluation harness
+
+`peeky-eval` scores a pipeline against a frozen corpus of pages using
+hand-written labels. It is how every claim above was produced, and it is
+included in the package.
+
+**How it works.** For each query, a person reads the full text of every cached
+result and writes down the atomic facts a good answer must contain — *nuggets* —
+plus a grade for each source. Scoring then matches those facts against a
+pipeline's output by substring, with no model in the loop:
+
+```json
+{
+  "id": "n2",
+  "text": "The cleanup function runs before the effect re-runs with changed dependencies",
+  "anchors": [["cleanup", "teardown"], ["before", "prior to", "re-run"], ["dependenc", "deps"]],
+  "window": 220
+}
+```
+
+All anchor groups must match; any term within a group satisfies it. `window`
+caps the characters between the first and last match, so a fact cannot be
+"found" because its terms are scattered across unrelated text.
+
+**Why no LLM judge.** The effects that need detecting are around 2%.
+Judge-to-judge variation is larger than that, so an LLM judge would still emit a
+number and it would still be believed. Putting the judgement in at authoring
+time and keeping scoring deterministic means two runs a week apart are
+comparable, and a scoring pass takes seconds.
+
+**Metrics.** `nuggetRecall` (the headline), `conditionalNuggetRecall`
+(extraction isolated from retrieval), `sourcePrecision`, `badRate`,
+`canonicalMrr`, and `efficiency`. All are macro-averaged over queries.
+
+**Commands.**
+
 ```bash
-npx peeky-search --query "authentication" --file docs.html --debug
+pnpm eval corpus --check                 # what is cached, and is it enough to run
+pnpm eval record --tranche 1 --adapters  # the only command that uses the network
+pnpm eval run --pipeline v2 --tranche 1  # replay, score, print the scoreboard
+pnpm eval diff run-a run-b               # what changed, regressions first
+pnpm eval dump <queryId>                 # every cached page as clean markdown
 ```
 
-**Additional options:**
-- `--timing` or `-t`: Show performance timing breakdown
-- `--diagnostics`: Show page-by-page extraction details (search mode)
+`--pipeline oracle` runs a selector that can see the answer key, which measures
+the ceiling the candidate pool allows — it separates "never fetched" from
+"fetched and not chosen".
 
-## How It Works
+**What you have to supply.** The 200-query set is committed
+([`eval/queries/queryset.json`](eval/queries/queryset.json)) and so is the
+labelling rubric ([`eval/LABELING.md`](eval/LABELING.md)). The corpus and the
+labels are not: the corpus is gigabytes of other people's pages, and the labels
+are per-site quality judgements that this project has no business publishing.
+To run the harness you record your own corpus and write your own labels. Your
+absolute numbers will differ from the ones above; differences measured within
+your own corpus are what it is for.
 
-### Search Pipeline
+## Development
 
-```
-SearXNG → Dedupe URLs → Block JS domains → Title filter → Session dedupe
-                                                                ↓
-                                                          Scrape pages
-                                                                ↓
-                                                    Extract → Rank → Budget
-```
-
-1. **Search**: Query local SearXNG for URLs
-2. **Pre-scrape filtering**: Skip blocked domains, filter by title/snippet relevance (40% query token threshold)
-3. **Session deduplication**: Skip URLs already fetched for similar queries
-4. **Scrape**: Parallel fetch with timeout handling
-5. **Extract & rank**: Run extraction pipeline, rank by combined relevance
-6. **Budget**: Fit results within character limits
-
-### Extraction Pipeline
-
-```
-HTML → Strip boilerplate → Extract blocks → Segment sentences
-                                                    ↓
-                                              BM25 + Heuristics
-                                                    ↓
-                                            Rank → Select anchors
-                                                    ↓
-                                      Expand context → Deduplicate
-                                                    ↓
-                                          Assemble excerpts (budget)
+```bash
+pnpm install
+pnpm build          # tsup -> dist/
+pnpm test           # vitest, watch
+pnpm test:run       # single run (900 tests)
+pnpm build:tsc      # type-check only
 ```
 
-1. **Preprocess**: Strip scripts, styles, nav, ads, and boilerplate
-2. **Segment**: Extract blocks (headings, paragraphs, lists, code) into sentences
-3. **Quality gate**: Reject low-quality pages (too few sentences, mostly fragments)
-4. **Score**: BM25 for term relevance + 9 structural heuristics
-5. **Select**: Pick top sentences with position/content diversity
-6. **Expand**: Build context around anchors, respecting section boundaries
-7. **Assemble**: Fit excerpts within character budget
+Note that `build:tsc` overwrites the bundled `dist/eval/cli.js`; run `pnpm
+build` after it.
 
-## Performance
-
-### Token efficiency
-
-Compared to fetching raw HTML/markdown and sending it to context:
-
-| Metric | Raw fetch | peeky-search |
-|--------|-----------|--------------|
-| Content per page | 30-80KB | 1-4KB |
-| Tokens per page | ~15,000-40,000 | ~500-2,000 |
-| 5-page search | ~200KB, ~50k tokens | ~12KB, ~3,000 tokens |
-
-**~95% reduction vs raw HTML fetching.** Built-in web search also compresses content (via summarization), but uses a hidden LLM call to do it - peeky achieves similar token counts with pure IR, no intermediate model.
-
-### Speed
-
-- **Extraction**: ~20-50ms per page (pure computation, no LLM)
-- **Search**: ~3-4s total for 5 pages (network-bound)
-- **No hidden costs**: What you see is what you pay for
-
-## Scoring System
-
-**BM25** (weight: 0.6): Classic term frequency-inverse document frequency.
-
-**Heuristics** (weight: 0.4):
-
-| Metric | Weight | What it measures |
-|--------|--------|------------------|
-| headingPath | 0.17 | Query terms in section headings |
-| coverage | 0.16 | IDF-weighted term coverage |
-| proximity | 0.14 | How close query terms appear |
-| headingProximity | 0.11 | Distance to matching heading |
-| structure | 0.11 | Block type (headings, code valued higher) |
-| density | 0.09 | Query term concentration |
-| outlier | 0.09 | Anomaly detection for high-value sentences |
-| metaSection | 0.08 | Penalizes intro/conclusion/meta content |
-| position | 0.05 | Early content bonus |
-
-### Extraction Modes
-
-- **strict**: For single-page extraction. Requires strong multi-term matches.
-- **search**: For multi-page search. Looser thresholds, accepts partial matches.
-
-## Configuration
-
-### Pipeline Defaults
-
-```typescript
-{
-  bm25Weight: 0.6,
-  heuristicWeight: 0.4,
-  maxAnchors: 5,
-  minScore: 0.25,
-  diversityThreshold: 0.4,
-  contextBefore: 5,
-  contextAfter: 8,
-  maxExcerpts: 3,
-  charBudget: 6000
-}
+```
+src/
+├── v2/           the pipeline that runs — parse, passages, rank, authority, assemble, fetch/
+├── mcp/          server + orchestration (orchestrator-v2.ts is what ships)
+├── eval/         the harness — corpus cache, labels, scorer, adapters
+├── preprocessing/, scoring/, extraction/, output/    v1, kept as the eval baseline
+└── setup/        Docker + SearXNG management
 ```
 
-### MCP Defaults
+v1 is retained deliberately: the harness replays it to reproduce the baseline,
+and a baseline you cannot re-run is not a baseline. It is no longer served to
+any caller.
 
-```typescript
-{
-  searxngUrl: "http://localhost:8888",
-  maxResults: 5,
-  timeout: 5000,
-  perPageCharBudget: 3000,
-  totalCharBudget: 12000
-}
-```
+See [CONTRIBUTING.md](CONTRIBUTING.md), and [CLAUDE.md](CLAUDE.md) for a fuller
+architectural tour.
 
-## Tips
+## Limitations
 
-### Disable built-in web search
-
-Models may default to their built-in web search tool if it's enabled. To ensure the model uses peeky-search:
-
-- **Claude Code**: Disable web search in settings, or the model will prefer WebSearch over MCP tools
-- **Other clients**: Check if built-in web/browser tools can be disabled
-
-### Add a rule or memory
-
-Some models won't recognize MCP tools unless explicitly instructed. Add a rule like:
-
-> Use peeky_web_search for web searches. Use peeky_fetch_page to read URLs.
-
-**Where to add this:**
-- **Cursor**: Add to `.cursorrules` or project rules
-- **Other clients**: Add to system prompt, memories, or custom instructions
+- `SEARXNG_URL` is not read by the server yet; the port is effectively fixed at
+  8888.
+- Content farms are still returned. Authority reorders results but does not
+  reject them, and the measured bad rate is unchanged from v1.
+- Unauthenticated API quotas apply to the structured sources: Stack Exchange
+  allows 300 requests/day per IP, GitHub 60/hour. Past those, those results
+  degrade to whatever HTML is available — which for Stack Overflow is nothing.
+- SearXNG's upstream engines rate-limit under sustained use and then return an
+  empty result list rather than an error. peeky reports this rather than
+  claiming no results exist.
+- `src/mcp/orchestrator-v2.ts` has no direct test coverage.
+- HTML comments and MDX artifacts can survive into excerpts from some sources.
 
 ## Acknowledgements
 
-- [SearXNG](https://github.com/searxng/searxng) - Privacy-respecting metasearch engine that powers the search backend
-- [Model Context Protocol](https://modelcontextprotocol.io/) - The protocol that makes this usable by AI assistants
-- [Cheerio](https://cheerio.js.org/) - Fast HTML parsing
-- [stemmer](https://github.com/words/stemmer) - Porter stemming for token normalization
+[SearXNG](https://github.com/searxng/searxng) for the search backend, the
+[Model Context Protocol](https://modelcontextprotocol.io/) for the tool
+interface, [Cheerio](https://cheerio.js.org/) for HTML parsing, and
+[stemmer](https://github.com/words/stemmer) for token normalization.
 
 ## Disclaimer
 
-This tool fetches and extracts content from publicly accessible web pages. Users are responsible for ensuring their use complies with applicable laws and the terms of service of any websites accessed. The authors are not liable for misuse.
+This tool fetches and extracts content from publicly accessible web pages. Users
+are responsible for complying with applicable law and the terms of service of
+the sites they access.
 
 ## License
 

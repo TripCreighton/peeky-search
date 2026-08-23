@@ -90,6 +90,12 @@ export interface SearchResult {
     diagnostics: PageDiagnostics[];
     queryTokens: string[];
     sessionSkippedCount?: number;
+    /**
+     * Set when the pipeline exited before any extraction happened (SearXNG
+     * error, or zero search results). `search()` returns this string verbatim,
+     * which is how the pre-refactor early-return strings are preserved.
+     */
+    earlyExit?: string;
 }
 
 export const DEFAULT_CONFIG: Required<Omit<SearchConfig, "sessionKey">> = {

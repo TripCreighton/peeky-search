@@ -2,7 +2,7 @@
  * Main orchestration for MCP search pipeline
  */
 
-import type { SearchConfig, SearchResult, PageExtraction, SearxngResult, PageDiagnostics, PageStatus } from "./types";
+import type { SearchConfig, SearchResult, PageExtraction, SearxngResult, ScrapeResult, PageDiagnostics, PageStatus } from "./types";
 import type { Block } from "../types";
 import { DEFAULT_CONFIG } from "./types";
 import type { RelevanceMetrics } from "../pipeline";
@@ -77,7 +77,7 @@ export function createSessionCacheKey(url: string, tokens: string[]): string {
 /**
  * Add URLs to a session's seen set (with query-specific composite keys)
  */
-function addUrlsToSession(sessionKey: string, urls: string[], queryTokens: string[]): void {
+export function addUrlsToSession(sessionKey: string, urls: string[], queryTokens: string[]): void {
     const session = getSession(sessionKey);
     for (const url of urls) {
         const cacheKey = createSessionCacheKey(url, queryTokens);
@@ -91,7 +91,7 @@ function addUrlsToSession(sessionKey: string, urls: string[], queryTokens: strin
  * for substantially different queries.
  * Returns { newUrls, skippedUrls }
  */
-function filterSessionUrls(
+export function filterSessionUrls(
     sessionKey: string | undefined,
     urls: string[],
     queryTokens: string[]
@@ -121,10 +121,17 @@ function filterSessionUrls(
  * - medium.com: 403 Forbidden for bots, obfuscated CSS, often paywalled
  * - npmjs.com: 403 Forbidden for bots
  * - researchgate.net: Heavy metadata noise, often paywalled/login-gated
- * - grokipedia.org: AI-generated content, low quality
+ * - grokipedia.org: machine-generated encyclopedia text
  *
  * Note: GitHub issues/discussions work fine, only repo main pages use JSON.
- * Stack Exchange sites (stackoverflow, etc.) are server-rendered and work well.
+ *
+ * Stack Exchange is NOT usable by scraping, despite being server-rendered:
+ * stackoverflow.com answers every User-Agent with HTTP 403, real Chrome
+ * included, so its pages arrive as empty 403 bodies. It is left out of this
+ * blocklist only because blocking it would also hide it from the SERP; the
+ * content is reachable exclusively through api.stackexchange.com
+ * (300 requests/day unauthenticated), which is what the v2 stackexchange
+ * adapter uses.
  */
 const BLOCKED_DOMAINS = new Set([
     "medium.com",
@@ -657,17 +664,44 @@ export interface SearchOptions extends SearchConfig {
     debug?: boolean;
     /** Include diagnostic information about page extraction results */
     diagnostics?: boolean;
+    /**
+     * Injectable SERP fetcher. Defaults to the live SearXNG client.
+     * The eval harness supplies a corpus-backed replacement so runs replay a
+     * frozen corpus instead of touching the network.
+     */
+    fetchSerp?: (query: string, maxResults: number) => Promise<SearxngResult[]>;
+    /**
+     * Injectable page fetcher. Defaults to the live parallel scraper.
+     * Same purpose as `fetchSerp`.
+     */
+    fetchPages?: (urls: string[]) => Promise<ScrapeResult[]>;
 }
 
 /**
- * Main search function: orchestrates the full pipeline
+ * Build the result returned when the pipeline exits before extraction.
  */
-export async function search(
+function earlyExitResult(query: string, message: string): SearchResult {
+    return {
+        query,
+        pages: [],
+        totalPages: 0,
+        successfulPages: 0,
+        totalChars: 0,
+        diagnostics: [],
+        queryTokens: [],
+        earlyExit: message,
+    };
+}
+
+/**
+ * Main search function: orchestrates the full pipeline and returns the
+ * structured result. `search()` wraps this and formats it into a string.
+ */
+export async function searchStructured(
     query: string,
     config: SearchOptions = {}
-): Promise<string> {
+): Promise<SearchResult> {
     const debug = config.debug ?? false;
-    const includeDiagnostics = config.diagnostics ?? false;
 
     // Parse site: notation - keep it for SearXNG, remove for extraction
     const { searchQuery, extractionQuery } = parseSearchOperators(query);
@@ -687,17 +721,19 @@ export async function search(
     const requestMultiplier = 2; // Request 2x to account for ~50% blocked domains
     let searchResults: SearxngResult[];
     try {
-        searchResults = await logger.timeAsync("MCP: SearXNG search", async () => searchSearxng(searchQuery, {
-            baseUrl: cfg.searxngUrl,
-            maxResults: cfg.maxResults * requestMultiplier,
-            timeout: cfg.timeout,
-        }));
+        searchResults = await logger.timeAsync("MCP: SearXNG search", async () => config.fetchSerp
+            ? config.fetchSerp(searchQuery, cfg.maxResults * requestMultiplier)
+            : searchSearxng(searchQuery, {
+                baseUrl: cfg.searxngUrl,
+                maxResults: cfg.maxResults * requestMultiplier,
+                timeout: cfg.timeout,
+            }));
     } catch (error) {
-        return `Error searching SearXNG: ${error instanceof Error ? error.message : "Unknown error"}`;
+        return earlyExitResult(query, `Error searching SearXNG: ${error instanceof Error ? error.message : "Unknown error"}`);
     }
 
     if (searchResults.length === 0) {
-        return `No search results found for: "${query}"`;
+        return earlyExitResult(query, `No search results found for: "${query}"`);
     }
 
     // Step 1b: Deduplicate URLs (removes version duplicates like /v1/ vs /v2/)
@@ -777,7 +813,9 @@ export async function search(
 
     // Step 2: Scrape pages in parallel (only non-blocked URLs)
     const urls = resultsToScrape.map(r => r.url);
-    const scrapeResults = await logger.timeAsync("MCP: Scrape pages", async () => scrapeUrls(urls, { timeout: cfg.timeout }));
+    const scrapeResults = await logger.timeAsync("MCP: Scrape pages", async () => config.fetchPages
+        ? config.fetchPages(urls)
+        : scrapeUrls(urls, { timeout: cfg.timeout }));
 
     // Build URL to search result mapping
     const searchResultMap = new Map<string, SearxngResult>();
@@ -997,7 +1035,7 @@ export async function search(
         logger.debug(`Session '${cfg.sessionKey}': cached ${scrapedUrls.length} URL+query keys for future deduplication`, debug);
     }
 
-    // Step 6: Format results
+    // Step 6: Assemble structured result
     const result: SearchResult = {
         query,
         pages: budgetedPages,
@@ -1008,6 +1046,24 @@ export async function search(
         queryTokens,
         ...(sessionSkippedResults.length > 0 && { sessionSkippedCount: sessionSkippedResults.length }),
     };
+
+    return result;
+}
+
+/**
+ * Main search function: runs the pipeline and formats the result as a string.
+ */
+export async function search(
+    query: string,
+    config: SearchOptions = {}
+): Promise<string> {
+    const includeDiagnostics = config.diagnostics ?? false;
+
+    const result = await searchStructured(query, config);
+
+    if (result.earlyExit !== undefined) {
+        return result.earlyExit;
+    }
 
     const formatted = logger.time("MCP: Format results", () => formatResults(result, includeDiagnostics));
 

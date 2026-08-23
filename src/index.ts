@@ -5,6 +5,7 @@ import { extractExcerpts, type PipelineConfig } from "./pipeline";
 import { formatExcerpts } from "./output/excerpts";
 import { tokenize } from "./preprocessing/tokenize";
 import { search, fetchPage } from "./mcp/orchestrator";
+import { searchV2Mcp } from "./mcp/orchestrator-v2";
 import Logger from "./utils/logger";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -29,6 +30,9 @@ async function main(): Promise<void> {
     let timing = false;
     let diagnostics = false;
     let maxResults = 5;
+    // v1 remains the default. v2 is opt-in so the measured baseline stays the
+    // thing users get until v2 has been exercised for real.
+    let pipeline: "v1" | "v2" = "v1";
 
     for (let i = 0; i < args.length; i++) {
         const arg = args[i];
@@ -49,6 +53,13 @@ async function main(): Promise<void> {
             fetchMode = true;
         } else if (arg === "--max" && nextArg !== undefined) {
             maxResults = parseInt(nextArg, 10);
+            i++;
+        } else if (arg === "--pipeline" && nextArg !== undefined) {
+            if (nextArg !== "v1" && nextArg !== "v2") {
+                logger.error(`unknown pipeline "${nextArg}" (must be v1 or v2)`);
+                process.exit(1);
+            }
+            pipeline = nextArg;
             i++;
         } else if (arg === "--debug") {
             debug = true;
@@ -73,7 +84,14 @@ async function main(): Promise<void> {
             logger.error("--search requires --query");
             process.exit(1);
         }
-        logger.log(`Searching: "${query}" (max ${maxResults} results)`);
+        logger.log(`Searching: "${query}" (max ${maxResults} results, ${pipeline})`);
+        if (pipeline === "v2") {
+            // Same function the MCP server calls, so what you read here is what
+            // an agent gets. A second rendering path is how output drifts.
+            const out = await searchV2Mcp(query, { maxResults, debug });
+            console.log("\n" + out);
+            return;
+        }
         const result = await search(query, { maxResults, debug, diagnostics });
         console.log("\n" + result);
         return;
@@ -218,6 +236,7 @@ Options:
   --max N           Max results for --search mode (default: 5)
   --debug           Show debug information
   --diagnostics     Show page-by-page extraction diagnostics (--search only)
+  --pipeline v1|v2  Extraction pipeline for --search (default: v1)
   --timing, -t      Show performance timing breakdown
   --help, -h        Show this help message
 

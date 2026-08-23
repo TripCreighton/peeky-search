@@ -5,7 +5,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
-import { search, fetchPage } from "./orchestrator";
+import { searchV2Mcp, fetchPageV2 } from "./orchestrator-v2";
 import Logger from "../utils/logger";
 
 const logger = Logger.getInstance();
@@ -56,7 +56,7 @@ MULTIPLE SEARCHES:
 Use the same sessionKey across related searches to skip already-fetched URLs. Vary your query terms significantly between searches—similar queries return overlapping results.
 
 FOLLOW-UP:
-If an excerpt looks promising but lacks detail, use peeky_fetch_page with that URL to read more.
+If an excerpt looks promising but lacks detail, use peeky_fetch_page with that URL to read more. It reads Stack Overflow, Stack Exchange and GitHub through their APIs rather than by scraping, so it can open results that block ordinary fetching.
 
 ITERATIVE SEARCH STRATEGY:
 Start with a broad query to discover relevant terminology, domains, and error messages. Review results before follow-up searches. Use discovered terms, exact error strings, or promising site patterns to refine subsequent queries. First results teach you how the community talks about the problem—use that vocabulary in follow-ups.
@@ -64,24 +64,30 @@ Start with a broad query to discover relevant terminology, domains, and error me
 MULTI-SITE TARGETING:
 For technical issues, use OR to constrain to high-signal sources:
   site:github.com OR site:stackoverflow.com OR site:discuss.ai.google.dev "query here"
-This reduces noise from tutorial blogs and SEO content. Boolean operators (OR, AND) between site: operators are filtered from extraction matching, so they won't pollute relevance scoring. Note: OR/AND only work between site: operators—if your search text contains "OR" as a word (e.g., in an error message), it will be preserved.
+This reduces noise from tutorial blogs and SEO content. Boolean operators (OR, AND) between site: operators are stripped before ranking, so they won't pollute it. Note: OR/AND only work between site: operators—if your search text contains "OR" as a word (e.g., in an error message), it will be preserved.
 
 ERROR MESSAGE SEARCHES:
 When searching for error messages, use exact quotes: "failed to parse" or "invalid schema". Error strings are high-signal anchors that cut through noise.
 
-RETURNS: Extracted text excerpts with source URLs.`,
+RETURNS: Verbatim excerpts from each page, quoted rather than summarised, with the heading path they sit under and the source URL. Code blocks keep their fences. Nothing is paraphrased, so you are reading the source rather than a summary of it.`,
     {
         query: z.string().describe(
             "Search query with technical terms. Supports operators: site:, \"quotes\", -exclude."
         ),
         maxResults: z.number().optional().describe("Maximum pages to scrape (default: 5, max: 10)"),
-        diagnostics: z.boolean().optional().describe("Include detailed diagnostics about why pages were filtered or failed (default: false)."),
         sessionKey: z.string().optional().describe("Session key for cross-call URL deduplication. When provided, URLs already fetched in previous calls with the same key will be skipped. Use a consistent key (e.g., 'react-research') across related searches to avoid re-fetching the same pages."),
     },
-    async ({ query, maxResults, diagnostics, sessionKey }) => {
-        const result = await search(query, {
+    async ({ query, maxResults, sessionKey }) => {
+        // v2 is what this server runs. v1's search() stays in orchestrator.ts
+        // because the eval harness injects fetchers into it to reproduce the
+        // baseline, but nothing serves it to a caller any more.
+        //
+        // The old `diagnostics` parameter is gone: it reported on v1's filter
+        // stages (blocked domains, pre-scrape title filtering), and this path
+        // has none of them. An argument the model can pass that does nothing is
+        // worse than no argument.
+        const result = await searchV2Mcp(query, {
             ...(maxResults !== undefined && { maxResults }),
-            ...(diagnostics !== undefined && { diagnostics }),
             ...(sessionKey !== undefined && { sessionKey }),
         });
 
@@ -107,18 +113,21 @@ WHEN TO USE:
 - User provides a URL and asks "what does this say" or "read this page"
 
 MODES:
-- Without query: Returns full cleaned content (headings, paragraphs, code blocks)
-- With query: Returns focused excerpts relevant to the query
+- Without query: the whole readable document in order — headings, prose, code blocks, tables
+- With query: only the passages that answer it, ranked
+
+READS PAGES THAT BLOCK SCRAPERS:
+Stack Overflow and Stack Exchange answer every scraper with 403, and GitHub renders repo pages with JavaScript. This tool goes through their APIs instead, so those URLs return real content — answers with their vote counts and accepted flag, issue and discussion threads. npm packages and documentation sites that publish markdown are read from source too. If a search result looks worth reading, it is worth fetching even when you would expect it to be blocked.
 
 Tip: After peeky_web_search, if an excerpt looks promising but lacks detail, fetch that URL with a query to dig deeper.
 
-RETURNS: Cleaned page content in markdown format with title and source URL.`,
+RETURNS: The page's own words in markdown, with title and source URL. Code blocks keep their fences.`,
     {
         url: z.string().describe("The URL to fetch and read"),
         query: z.string().optional().describe("Optional query to focus extraction. If omitted, returns full cleaned content."),
     },
     async ({ url, query }) => {
-        const result = await fetchPage(url, {
+        const result = await fetchPageV2(url, {
             ...(query !== undefined && { query }),
         });
 

@@ -1,0 +1,67 @@
+{
+  "items": [
+    {
+      "owner": {
+        "account_id": 2001,
+        "reputation": 15000,
+        "user_id": 2001,
+        "user_type": "registered",
+        "profile_image": "https://example.com/avatar.png",
+        "display_name": "Answerer 1",
+        "link": "https://stackoverflow.com/users/2001/answerer-1"
+      },
+      "is_accepted": true,
+      "score": 18317,
+      "last_activity_date": 1711253853,
+      "last_edit_date": 1711253853,
+      "creation_date": 1224802124,
+      "answer_id": 231855,
+      "question_id": 231767,
+      "content_license": "CC BY-SA 4.0",
+      "body": "<p>The keyword turns the function into a generator: calling it returns an iterator\nrather than running the body. Each value is produced on demand.</p>\n<pre><code>&gt;&gt;&gt; gen = counter(3)\n&gt;&gt;&gt; next(gen)\n0\n&gt;&gt;&gt; list(gen)\n[1, 2]\n</code></pre>\n<p>Nothing runs until the first value is requested, so memory stays constant.</p>"
+    },
+    {
+      "owner": {
+        "account_id": 2002,
+        "reputation": 14000,
+        "user_id": 2002,
+        "user_type": "registered",
+        "profile_image": "https://example.com/avatar.png",
+        "display_name": "Answerer 2",
+        "link": "https://stackoverflow.com/users/2002/answerer-2"
+      },
+      "is_accepted": false,
+      "score": 2596,
+      "last_activity_date": 1691641847,
+      "last_edit_date": 1691641847,
+      "creation_date": 1224969750,
+      "answer_id": 237028,
+      "question_id": 231767,
+      "content_license": "CC BY-SA 4.0",
+      "body": "<p>A shorter way to think about it: the function is paused at each value and resumed\nwhen the caller asks for the next one. Local state survives the pause.</p>\n<pre><code>def pairs(items):\n    for item in items:\n        yield item, len(item)\n</code></pre>"
+    },
+    {
+      "owner": {
+        "account_id": 2003,
+        "reputation": 13000,
+        "user_id": 2003,
+        "user_type": "registered",
+        "profile_image": "https://example.com/avatar.png",
+        "display_name": "Answerer 3",
+        "link": "https://stackoverflow.com/users/2003/answerer-3"
+      },
+      "is_accepted": false,
+      "score": 803,
+      "last_activity_date": 1557235715,
+      "last_edit_date": 1557235715,
+      "creation_date": 1224800921,
+      "answer_id": 231801,
+      "question_id": 231767,
+      "content_license": "CC BY-SA 4.0",
+      "body": "<p>Worth adding that a generator is single-use. Once it is exhausted it does not\nrestart, so iterate it twice and the second pass sees nothing.</p>"
+    }
+  ],
+  "has_more": true,
+  "quota_max": 300,
+  "quota_remaining": 297
+}

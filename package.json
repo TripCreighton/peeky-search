@@ -1,11 +1,12 @@
 {
   "name": "peeky-search",
   "version": "1.0.19",
-  "description": "MCP server for web search that extracts relevant excerpts instead of summarizing. BM25 + heuristic ranking, no LLM needed.",
+  "description": "MCP server for web search that returns verbatim passages from sources instead of summaries. Passage-level ranking with source authority, no LLM in the loop.",
   "type": "module",
   "main": "dist/index.js",
   "bin": {
-    "peeky-search": "dist/cli.js"
+    "peeky-search": "dist/cli.js",
+    "peeky-eval": "dist/eval/cli.js"
   },
   "files": [
     "dist",
@@ -19,6 +20,7 @@
     "start:watch": "nodemon --watch src --ext *.ts --exec \"pnpm build && pnpm start\"",
     "mcp": "node dist/cli.js mcp",
     "cli": "node dist/cli.js",
+    "eval": "node dist/eval/cli.js",
     "test": "vitest",
     "test:run": "vitest run",
     "test:coverage": "vitest run --coverage"

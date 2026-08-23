@@ -1,0 +1,1467 @@
+{
+  "queries": [
+    {
+      "id": "api-docs-react-useeffect-cleanup",
+      "text": "react useEffect cleanup function",
+      "category": "api-docs",
+      "difficulty": 1,
+      "tranche": 1
+    },
+    {
+      "id": "api-docs-python-pathlib-rglob",
+      "text": "pathlib rglob recursive glob pattern",
+      "category": "api-docs",
+      "difficulty": 1,
+      "tranche": 2
+    },
+    {
+      "id": "api-docs-go-context-withtimeout",
+      "text": "go context.WithTimeout cancel func",
+      "category": "api-docs",
+      "difficulty": 1,
+      "tranche": 1
+    },
+    {
+      "id": "api-docs-dockerfile-healthcheck-options",
+      "text": "dockerfile HEALTHCHECK interval timeout retries start-period",
+      "category": "api-docs",
+      "difficulty": 1,
+      "tranche": 2
+    },
+    {
+      "id": "api-docs-git-rev-parse-show-toplevel",
+      "text": "git rev-parse --show-toplevel",
+      "category": "api-docs",
+      "difficulty": 1,
+      "tranche": 2
+    },
+    {
+      "id": "api-docs-css-grid-template-areas",
+      "text": "css grid-template-areas syntax",
+      "category": "api-docs",
+      "difficulty": 1,
+      "tranche": 1
+    },
+    {
+      "id": "api-docs-intl-numberformat-currency",
+      "text": "Intl.NumberFormat currency minimumFractionDigits option",
+      "category": "api-docs",
+      "difficulty": 1,
+      "tranche": 2
+    },
+    {
+      "id": "api-docs-bash-parameter-expansion-default",
+      "text": "bash ${var:-default} parameter expansion",
+      "category": "api-docs",
+      "difficulty": 1,
+      "tranche": 2
+    },
+    {
+      "id": "api-docs-asyncio-gather-return-exceptions",
+      "text": "asyncio.gather return_exceptions True",
+      "category": "api-docs",
+      "difficulty": 1,
+      "tranche": 1
+    },
+    {
+      "id": "api-docs-typescript-satisfies-operator",
+      "text": "typescript satisfies operator",
+      "category": "api-docs",
+      "difficulty": 1,
+      "tranche": 2
+    },
+    {
+      "id": "api-docs-postgres-generate-series-dates",
+      "text": "postgres generate_series date interval 1 day",
+      "category": "api-docs",
+      "difficulty": 1,
+      "tranche": 2
+    },
+    {
+      "id": "api-docs-serde-rename-all-camelcase",
+      "text": "serde rename_all camelCase attribute",
+      "category": "api-docs",
+      "difficulty": 1,
+      "tranche": 1
+    },
+    {
+      "id": "api-docs-css-clamp-function",
+      "text": "css clamp min preferred max",
+      "category": "api-docs",
+      "difficulty": 1,
+      "tranche": 2
+    },
+    {
+      "id": "api-docs-docker-compose-depends-on-healthy",
+      "text": "docker compose depends_on condition service_healthy",
+      "category": "api-docs",
+      "difficulty": 1,
+      "tranche": 2
+    },
+    {
+      "id": "api-docs-rust-option-map-or-else",
+      "text": "rust Option map_or_else signature closure arguments",
+      "category": "api-docs",
+      "difficulty": 2,
+      "tranche": 1
+    },
+    {
+      "id": "api-docs-postgres-jsonb-set",
+      "text": "postgres jsonb_set create_missing argument",
+      "category": "api-docs",
+      "difficulty": 2,
+      "tranche": 2
+    },
+    {
+      "id": "api-docs-fetch-abortsignal-timeout",
+      "text": "AbortSignal.timeout fetch request timeout",
+      "category": "api-docs",
+      "difficulty": 2,
+      "tranche": 1
+    },
+    {
+      "id": "api-docs-dataclass-field-default-factory",
+      "text": "dataclasses field default_factory mutable default list",
+      "category": "api-docs",
+      "difficulty": 2,
+      "tranche": 2
+    },
+    {
+      "id": "api-docs-node-readdir-withfiletypes",
+      "text": "fs.promises.readdir withFileTypes Dirent isDirectory",
+      "category": "api-docs",
+      "difficulty": 2,
+      "tranche": 2
+    },
+    {
+      "id": "api-docs-tokio-spawn-blocking",
+      "text": "tokio spawn_blocking blocking code inside async task",
+      "category": "api-docs",
+      "difficulty": 2,
+      "tranche": 1
+    },
+    {
+      "id": "api-docs-k8s-securitycontext-runasuser",
+      "text": "kubernetes pod securityContext runAsUser fsGroup",
+      "category": "api-docs",
+      "difficulty": 2,
+      "tranche": 2
+    },
+    {
+      "id": "api-docs-sqlite-upsert-on-conflict-excluded",
+      "text": "sqlite insert on conflict do update excluded column",
+      "category": "api-docs",
+      "difficulty": 2,
+      "tranche": 2
+    },
+    {
+      "id": "api-docs-go-errors-join",
+      "text": "go errors.Join wrap multiple errors unwrap",
+      "category": "api-docs",
+      "difficulty": 2,
+      "tranche": 2
+    },
+    {
+      "id": "api-docs-vitest-vi-mock-factory-hoisting",
+      "text": "vitest vi.mock factory hoisted cannot reference outer variable",
+      "category": "api-docs",
+      "difficulty": 2,
+      "tranche": 1
+    },
+    {
+      "id": "api-docs-argparse-subparsers-required",
+      "text": "argparse add_subparsers required dest",
+      "category": "api-docs",
+      "difficulty": 2,
+      "tranche": 2
+    },
+    {
+      "id": "api-docs-git-worktree-add-detach",
+      "text": "git worktree add --detach existing branch",
+      "category": "api-docs",
+      "difficulty": 2,
+      "tranche": 2
+    },
+    {
+      "id": "api-docs-fastapi-depends-injection",
+      "text": "fastapi Depends dependency injection yield teardown",
+      "category": "api-docs",
+      "difficulty": 2,
+      "tranche": 2
+    },
+    {
+      "id": "api-docs-go-http-server-shutdown",
+      "text": "go http.Server Shutdown graceful drain context",
+      "category": "api-docs",
+      "difficulty": 2,
+      "tranche": 1
+    },
+    {
+      "id": "api-docs-kubectl-jsonpath-range",
+      "text": "kubectl get pods -o jsonpath range over items",
+      "category": "api-docs",
+      "difficulty": 2,
+      "tranche": 2
+    },
+    {
+      "id": "api-docs-zod-superrefine-custom-issue",
+      "text": "zod superRefine addIssue custom error path",
+      "category": "api-docs",
+      "difficulty": 2,
+      "tranche": 2
+    },
+    {
+      "id": "api-docs-clap-derive-subcommand",
+      "text": "clap derive Subcommand enum variants args",
+      "category": "api-docs",
+      "difficulty": 2,
+      "tranche": 2
+    },
+    {
+      "id": "api-docs-sqlalchemy2-select-joinedload",
+      "text": "sqlalchemy 2.0 select joinedload relationship eager loading",
+      "category": "api-docs",
+      "difficulty": 2,
+      "tranche": 2
+    },
+    {
+      "id": "api-docs-node-compare-secrets-timing-safe",
+      "text": "compare two secret strings in node without leaking timing",
+      "category": "api-docs",
+      "difficulty": 3,
+      "tranche": 1,
+      "note": "answer is crypto.timingSafeEqual; the docs page never uses the word 'secret' the way the query does"
+    },
+    {
+      "id": "api-docs-rust-share-mutable-state-across-threads",
+      "text": "rust share mutable state between threads safely",
+      "category": "api-docs",
+      "difficulty": 3,
+      "tranche": 2,
+      "note": "answer is Arc<Mutex<T>>; the query names neither type"
+    },
+    {
+      "id": "api-docs-python-read-huge-csv-without-memory",
+      "text": "read a huge csv in python without loading it all into memory",
+      "category": "api-docs",
+      "difficulty": 3,
+      "tranche": 1,
+      "note": "page says chunksize / iterator / streaming reader; query says 'without loading it all into memory'"
+    },
+    {
+      "id": "api-docs-postgres-two-workers-same-row",
+      "text": "stop two workers from grabbing the same queue row postgres",
+      "category": "api-docs",
+      "difficulty": 3,
+      "tranche": 2,
+      "note": "answer is SELECT ... FOR UPDATE SKIP LOCKED; query describes the symptom, not the clause"
+    },
+    {
+      "id": "api-docs-node-cpu-heavy-without-blocking",
+      "text": "node run cpu heavy work without blocking the event loop",
+      "category": "api-docs",
+      "difficulty": 3,
+      "tranche": 2,
+      "note": "answer is worker_threads (or child process); query never names the module"
+    },
+    {
+      "id": "api-docs-css-header-stays-while-scrolling",
+      "text": "make a header stay at the top of the page while scrolling css",
+      "category": "api-docs",
+      "difficulty": 3,
+      "tranche": 2,
+      "note": "answer is position: sticky (and its containing-block rules); query avoids the term"
+    },
+    {
+      "id": "api-docs-go-limit-concurrent-goroutines",
+      "text": "limit how many goroutines run at once go",
+      "category": "api-docs",
+      "difficulty": 3,
+      "tranche": 2,
+      "note": "answer is a buffered-channel semaphore or errgroup SetLimit; neither term appears in the query"
+    },
+    {
+      "id": "api-docs-git-undo-commit-keep-changes",
+      "text": "undo my last commit but keep the edits in my working tree",
+      "category": "api-docs",
+      "difficulty": 3,
+      "tranche": 2,
+      "note": "answer is git reset --soft HEAD~1; query never says reset, and --mixed/--hard must be distinguished"
+    },
+    {
+      "id": "debug-pnpm-outdated-lockfile",
+      "text": "pnpm ERR_PNPM_OUTDATED_LOCKFILE ci frozen lockfile fix",
+      "category": "debugging",
+      "difficulty": 1,
+      "tranche": 1
+    },
+    {
+      "id": "debug-node-err-require-esm",
+      "text": "Error [ERR_REQUIRE_ESM]: require() of ES Module not supported",
+      "category": "debugging",
+      "difficulty": 1,
+      "tranche": 1
+    },
+    {
+      "id": "debug-python-modulenotfounderror-src",
+      "text": "ModuleNotFoundError: No module named 'src' when running pytest",
+      "category": "debugging",
+      "difficulty": 1,
+      "tranche": 2
+    },
+    {
+      "id": "debug-docker-exec-format-error",
+      "text": "exec user process caused exec format error docker",
+      "category": "debugging",
+      "difficulty": 1,
+      "tranche": 2
+    },
+    {
+      "id": "debug-k8s-crashloopbackoff-exit-137",
+      "text": "kubernetes pod CrashLoopBackOff exit code 137",
+      "category": "debugging",
+      "difficulty": 1,
+      "tranche": 1
+    },
+    {
+      "id": "debug-postgres-too-many-clients",
+      "text": "FATAL: sorry, too many clients already postgres",
+      "category": "debugging",
+      "difficulty": 1,
+      "tranche": 2
+    },
+    {
+      "id": "debug-git-refusing-unrelated-histories",
+      "text": "fatal: refusing to merge unrelated histories",
+      "category": "debugging",
+      "difficulty": 1,
+      "tranche": 2
+    },
+    {
+      "id": "debug-rust-cannot-borrow-mutable-twice",
+      "text": "cannot borrow as mutable more than once at a time rust",
+      "category": "debugging",
+      "difficulty": 1,
+      "tranche": 1
+    },
+    {
+      "id": "debug-go-nil-pointer-dereference-panic",
+      "text": "panic: runtime error: invalid memory address or nil pointer dereference",
+      "category": "debugging",
+      "difficulty": 1,
+      "tranche": 2
+    },
+    {
+      "id": "debug-npm-eresolve-peer-dep",
+      "text": "npm ERR! ERESOLVE unable to resolve dependency tree",
+      "category": "debugging",
+      "difficulty": 1,
+      "tranche": 2
+    },
+    {
+      "id": "debug-cors-no-allow-origin-header",
+      "text": "blocked by CORS policy No 'Access-Control-Allow-Origin' header is present",
+      "category": "debugging",
+      "difficulty": 1,
+      "tranche": 2
+    },
+    {
+      "id": "debug-typescript-ts2589-excessively-deep",
+      "text": "TS2589 Type instantiation is excessively deep and possibly infinite",
+      "category": "debugging",
+      "difficulty": 1,
+      "tranche": 2
+    },
+    {
+      "id": "debug-ssh-permissions-too-open",
+      "text": "Permissions 0644 for id_rsa are too open",
+      "category": "debugging",
+      "difficulty": 1,
+      "tranche": 2
+    },
+    {
+      "id": "debug-vite-failed-to-resolve-node-builtin",
+      "text": "vite failed to resolve import fs node builtin in browser build",
+      "category": "debugging",
+      "difficulty": 2,
+      "tranche": 1
+    },
+    {
+      "id": "debug-ts-esm-missing-js-extension",
+      "text": "ts esm cannot find module relative import missing .js extension",
+      "category": "debugging",
+      "difficulty": 2,
+      "tranche": 2
+    },
+    {
+      "id": "debug-python-ssl-certificate-verify-failed",
+      "text": "requests SSLCertVerificationError unable to get local issuer certificate",
+      "category": "debugging",
+      "difficulty": 2,
+      "tranche": 1
+    },
+    {
+      "id": "debug-postgres-deadlock-detected",
+      "text": "postgres ERROR deadlock detected process waiting for ShareLock",
+      "category": "debugging",
+      "difficulty": 2,
+      "tranche": 2
+    },
+    {
+      "id": "debug-docker-build-cache-not-invalidating",
+      "text": "docker build keeps using a cached layer after I changed the source",
+      "category": "debugging",
+      "difficulty": 2,
+      "tranche": 2
+    },
+    {
+      "id": "debug-k8s-imagepullbackoff-private-registry",
+      "text": "ImagePullBackOff pull access denied private registry imagePullSecrets",
+      "category": "debugging",
+      "difficulty": 2,
+      "tranche": 1
+    },
+    {
+      "id": "debug-git-recover-detached-head-commits",
+      "text": "made commits in detached head now they are gone how do I get them back",
+      "category": "debugging",
+      "difficulty": 2,
+      "tranche": 2
+    },
+    {
+      "id": "debug-rust-lifetime-may-not-live-long-enough",
+      "text": "rust error lifetime may not live long enough closure returning reference",
+      "category": "debugging",
+      "difficulty": 2,
+      "tranche": 1
+    },
+    {
+      "id": "debug-go-all-goroutines-asleep-deadlock",
+      "text": "fatal error: all goroutines are asleep - deadlock!",
+      "category": "debugging",
+      "difficulty": 2,
+      "tranche": 2
+    },
+    {
+      "id": "debug-node-heap-out-of-memory-build",
+      "text": "JavaScript heap out of memory during build max-old-space-size",
+      "category": "debugging",
+      "difficulty": 2,
+      "tranche": 2
+    },
+    {
+      "id": "debug-eslint-flat-config-not-picked-up",
+      "text": "eslint ignores eslint.config.js and still reads .eslintrc",
+      "category": "debugging",
+      "difficulty": 2,
+      "tranche": 1
+    },
+    {
+      "id": "debug-macos-xcrun-invalid-developer-path",
+      "text": "xcrun: error: invalid active developer path CommandLineTools",
+      "category": "debugging",
+      "difficulty": 2,
+      "tranche": 2
+    },
+    {
+      "id": "debug-mysql-lock-wait-timeout-exceeded",
+      "text": "Lock wait timeout exceeded; try restarting transaction mysql",
+      "category": "debugging",
+      "difficulty": 2,
+      "tranche": 2
+    },
+    {
+      "id": "debug-playwright-timeout-waiting-for-locator",
+      "text": "playwright Timeout 30000ms exceeded waiting for locator",
+      "category": "debugging",
+      "difficulty": 2,
+      "tranche": 2
+    },
+    {
+      "id": "debug-tsconfig-paths-fail-at-runtime",
+      "text": "typescript path alias compiles fine but cannot find module at runtime",
+      "category": "debugging",
+      "difficulty": 2,
+      "tranche": 2
+    },
+    {
+      "id": "debug-react-state-shows-old-value",
+      "text": "why does my state still show the old value right after I set it react",
+      "category": "debugging",
+      "difficulty": 3,
+      "tranche": 1,
+      "note": "page explains state as a per-render snapshot and batching; query says 'old value' and names no concept"
+    },
+    {
+      "id": "debug-node-exits-silently-after-await",
+      "text": "node script just exits with nothing after awaiting a promise",
+      "category": "debugging",
+      "difficulty": 3,
+      "tranche": 2,
+      "note": "answer is an unhandled rejection or a floating promise / empty event loop; no error string to match on"
+    },
+    {
+      "id": "debug-docker-container-starts-then-dies",
+      "text": "my container starts then dies right away with no logs",
+      "category": "debugging",
+      "difficulty": 3,
+      "tranche": 1,
+      "note": "answer is that PID 1 exited / no foreground process; docs vocabulary is entirely different from the symptom"
+    },
+    {
+      "id": "debug-flex-child-overflows-container",
+      "text": "flex item ignores the width I set and pushes the page sideways",
+      "category": "debugging",
+      "difficulty": 3,
+      "tranche": 2,
+      "note": "answer is min-width: auto on flex items; the fix term never appears in the query"
+    },
+    {
+      "id": "debug-python-function-remembers-last-call",
+      "text": "python function remembers values from the last call list argument",
+      "category": "debugging",
+      "difficulty": 3,
+      "tranche": 2,
+      "note": "mutable default argument gotcha; the page title says 'mutable default', the query describes the symptom"
+    },
+    {
+      "id": "debug-git-ignored-file-still-tracked",
+      "text": "added a file to gitignore but git still tracks it",
+      "category": "debugging",
+      "difficulty": 3,
+      "tranche": 2,
+      "note": "answer is git rm --cached; requires understanding the index vs ignore-rule distinction"
+    },
+    {
+      "id": "debug-postgres-index-not-used-seq-scan",
+      "text": "query is still slow even though I added an index postgres",
+      "category": "debugging",
+      "difficulty": 3,
+      "tranche": 2,
+      "note": "answer spans planner statistics, selectivity, and implicit casts defeating the index; page says 'seq scan'"
+    },
+    {
+      "id": "conceptual-what-is-bm25-ranking",
+      "text": "what is BM25 ranking",
+      "category": "conceptual",
+      "difficulty": 1,
+      "tranche": 1
+    },
+    {
+      "id": "conceptual-what-is-cap-theorem",
+      "text": "what is the CAP theorem",
+      "category": "conceptual",
+      "difficulty": 1,
+      "tranche": 2
+    },
+    {
+      "id": "conceptual-tcp-three-way-handshake",
+      "text": "how does the tcp three way handshake work",
+      "category": "conceptual",
+      "difficulty": 1,
+      "tranche": 1
+    },
+    {
+      "id": "conceptual-what-is-a-monad",
+      "text": "what is a monad in functional programming",
+      "category": "conceptual",
+      "difficulty": 1,
+      "tranche": 2
+    },
+    {
+      "id": "conceptual-what-is-copy-on-write",
+      "text": "what is copy on write memory",
+      "category": "conceptual",
+      "difficulty": 1,
+      "tranche": 2
+    },
+    {
+      "id": "conceptual-what-is-a-bloom-filter",
+      "text": "what is a bloom filter and how does it work",
+      "category": "conceptual",
+      "difficulty": 1,
+      "tranche": 2
+    },
+    {
+      "id": "conceptual-how-git-rebase-rewrites-history",
+      "text": "how does git rebase actually rewrite commit history",
+      "category": "conceptual",
+      "difficulty": 2,
+      "tranche": 1
+    },
+    {
+      "id": "conceptual-jvm-jit-tiered-compilation",
+      "text": "how does jvm jit and tiered compilation work",
+      "category": "conceptual",
+      "difficulty": 2,
+      "tranche": 2
+    },
+    {
+      "id": "conceptual-tls-certificate-chain-validation",
+      "text": "how does a browser validate a tls certificate chain",
+      "category": "conceptual",
+      "difficulty": 2,
+      "tranche": 1
+    },
+    {
+      "id": "conceptual-postgres-mvcc",
+      "text": "how does postgres mvcc handle concurrent transactions",
+      "category": "conceptual",
+      "difficulty": 2,
+      "tranche": 2
+    },
+    {
+      "id": "conceptual-node-event-loop-phases",
+      "text": "how do the node event loop phases and microtasks work",
+      "category": "conceptual",
+      "difficulty": 2,
+      "tranche": 1
+    },
+    {
+      "id": "conceptual-kubernetes-scheduler-placement",
+      "text": "how does the kubernetes scheduler decide which node a pod goes to",
+      "category": "conceptual",
+      "difficulty": 2,
+      "tranche": 2
+    },
+    {
+      "id": "conceptual-rust-ownership-borrowing-rules",
+      "text": "how rust ownership and borrowing rules work",
+      "category": "conceptual",
+      "difficulty": 2,
+      "tranche": 2
+    },
+    {
+      "id": "conceptual-http2-multiplexing-streams",
+      "text": "how does http/2 multiplexing differ from pipelining streams",
+      "category": "conceptual",
+      "difficulty": 2,
+      "tranche": 2
+    },
+    {
+      "id": "conceptual-consistent-hashing-virtual-nodes",
+      "text": "consistent hashing virtual nodes explanation",
+      "category": "conceptual",
+      "difficulty": 2,
+      "tranche": 2
+    },
+    {
+      "id": "conceptual-python-descriptors",
+      "text": "how do python descriptors __get__ __set__ work",
+      "category": "conceptual",
+      "difficulty": 2,
+      "tranche": 2
+    },
+    {
+      "id": "conceptual-git-content-addressable-objects",
+      "text": "how git stores objects content addressable sha1",
+      "category": "conceptual",
+      "difficulty": 2,
+      "tranche": 2
+    },
+    {
+      "id": "conceptual-why-decimal-math-goes-weird",
+      "text": "why does adding two decimals give a weird long number in code",
+      "category": "conceptual",
+      "difficulty": 3,
+      "tranche": 1,
+      "note": "answer is binary floating point / IEEE 754; the query names neither and describes only the output"
+    },
+    {
+      "id": "conceptual-why-random-memory-access-is-slow",
+      "text": "why is jumping around in memory slower than reading it in order",
+      "category": "conceptual",
+      "difficulty": 3,
+      "tranche": 2,
+      "note": "answer is cache lines, locality of reference, and prefetching; query uses none of those terms"
+    },
+    {
+      "id": "conceptual-why-not-sha256-for-passwords",
+      "text": "why can't I just use sha256 to store passwords",
+      "category": "conceptual",
+      "difficulty": 3,
+      "tranche": 2,
+      "note": "answer is work factor and slow KDFs (bcrypt/argon2/scrypt); pages frame it as 'password hashing', not 'sha256'"
+    },
+    {
+      "id": "conceptual-why-characters-take-different-bytes",
+      "text": "why do some characters take more bytes than others in a text file",
+      "category": "conceptual",
+      "difficulty": 3,
+      "tranche": 2,
+      "note": "answer is UTF-8 variable-length encoding and code points; the query never says encoding or unicode"
+    },
+    {
+      "id": "conceptual-why-more-servers-stop-helping",
+      "text": "why does adding more servers stop making the system faster",
+      "category": "conceptual",
+      "difficulty": 3,
+      "tranche": 1,
+      "note": "answer is Amdahl's law / serial fraction / contention; the query names no law and no bottleneck"
+    },
+    {
+      "id": "conceptual-lost-update-race-condition",
+      "text": "two parts of my program read the same value and one update disappears",
+      "category": "conceptual",
+      "difficulty": 3,
+      "tranche": 2,
+      "note": "answer is a race condition / lost update / atomicity; query is symptom-only phrasing"
+    },
+    {
+      "id": "conceptual-why-a-few-requests-are-much-slower",
+      "text": "why do a few requests take way longer than the average one",
+      "category": "conceptual",
+      "difficulty": 3,
+      "tranche": 2,
+      "note": "answer is tail latency, p99, and queueing effects; the query never uses percentile vocabulary"
+    },
+    {
+      "id": "conceptual-container-vs-vm-under-the-hood",
+      "text": "how is a container different from a virtual machine under the hood",
+      "category": "conceptual",
+      "difficulty": 3,
+      "tranche": 2,
+      "note": "requires namespaces + cgroups + shared kernel vs hypervisor; good pages answer structurally, not with a definition"
+    },
+    {
+      "id": "howto-vitest-coverage-thresholds",
+      "text": "set up vitest coverage thresholds",
+      "category": "how-to",
+      "difficulty": 1,
+      "tranche": 1
+    },
+    {
+      "id": "howto-github-actions-cache-pnpm-store",
+      "text": "github actions cache pnpm store with setup-node",
+      "category": "how-to",
+      "difficulty": 1,
+      "tranche": 2
+    },
+    {
+      "id": "howto-postgres-create-read-only-user",
+      "text": "postgres create read only user grant select on all tables",
+      "category": "how-to",
+      "difficulty": 1,
+      "tranche": 1
+    },
+    {
+      "id": "howto-docker-multi-stage-build-node",
+      "text": "dockerfile multi stage build node production image",
+      "category": "how-to",
+      "difficulty": 1,
+      "tranche": 2
+    },
+    {
+      "id": "howto-git-squash-commits-interactive-rebase",
+      "text": "git squash last 3 commits into one interactive rebase",
+      "category": "how-to",
+      "difficulty": 1,
+      "tranche": 2
+    },
+    {
+      "id": "howto-nginx-reverse-proxy-websocket",
+      "text": "nginx reverse proxy websocket upgrade headers config",
+      "category": "how-to",
+      "difficulty": 1,
+      "tranche": 2
+    },
+    {
+      "id": "howto-pip-tools-compile-requirements",
+      "text": "pip-tools compile requirements.in lock dependencies",
+      "category": "how-to",
+      "difficulty": 1,
+      "tranche": 2
+    },
+    {
+      "id": "howto-systemd-service-restart-always",
+      "text": "systemd service unit Restart=always after network target",
+      "category": "how-to",
+      "difficulty": 1,
+      "tranche": 2
+    },
+    {
+      "id": "howto-ssh-config-proxyjump-bastion",
+      "text": "ssh config ProxyJump bastion host multiple hops",
+      "category": "how-to",
+      "difficulty": 2,
+      "tranche": 1
+    },
+    {
+      "id": "howto-k8s-rolling-update-zero-downtime",
+      "text": "kubernetes deployment rolling update readiness probe zero downtime",
+      "category": "how-to",
+      "difficulty": 2,
+      "tranche": 2
+    },
+    {
+      "id": "howto-rust-static-binary-musl-target",
+      "text": "cross compile rust static binary musl target",
+      "category": "how-to",
+      "difficulty": 2,
+      "tranche": 2
+    },
+    {
+      "id": "howto-go-embed-static-files-binary",
+      "text": "go embed static files into the binary embed.FS serve",
+      "category": "how-to",
+      "difficulty": 2,
+      "tranche": 1
+    },
+    {
+      "id": "howto-postgres-logical-replication-setup",
+      "text": "set up postgres logical replication publication subscription",
+      "category": "how-to",
+      "difficulty": 2,
+      "tranche": 2
+    },
+    {
+      "id": "howto-dual-esm-cjs-package-exports",
+      "text": "publish a package with both esm and cjs builds exports field",
+      "category": "how-to",
+      "difficulty": 2,
+      "tranche": 2
+    },
+    {
+      "id": "howto-caddy-automatic-https-reverse-proxy",
+      "text": "caddy reverse proxy automatic https Caddyfile",
+      "category": "how-to",
+      "difficulty": 2,
+      "tranche": 2
+    },
+    {
+      "id": "howto-git-bisect-run-script",
+      "text": "git bisect run a script to find the commit that broke the test",
+      "category": "how-to",
+      "difficulty": 2,
+      "tranche": 1
+    },
+    {
+      "id": "howto-launchd-run-script-at-login",
+      "text": "launchd plist run a script at login macos LaunchAgents",
+      "category": "how-to",
+      "difficulty": 2,
+      "tranche": 2
+    },
+    {
+      "id": "howto-terraform-import-existing-resource",
+      "text": "terraform import an existing resource into state",
+      "category": "how-to",
+      "difficulty": 2,
+      "tranche": 2
+    },
+    {
+      "id": "howto-pyproject-console-script-entry-point",
+      "text": "pyproject.toml project.scripts console entry point for a cli",
+      "category": "how-to",
+      "difficulty": 2,
+      "tranche": 2
+    },
+    {
+      "id": "howto-open-dev-server-on-phone",
+      "text": "open my dev server on my phone on the same wifi",
+      "category": "how-to",
+      "difficulty": 3,
+      "tranche": 1,
+      "note": "answer is binding to 0.0.0.0 / --host plus firewall; the query never says host, bind, or interface"
+    },
+    {
+      "id": "howto-keep-api-keys-out-of-repo",
+      "text": "keep api keys out of the repo without breaking local dev",
+      "category": "how-to",
+      "difficulty": 3,
+      "tranche": 2,
+      "note": "needs synthesis across .env handling, gitignore, and secret scanning; no single page uses this phrasing"
+    },
+    {
+      "id": "howto-shrink-a-large-docker-image",
+      "text": "my docker image is 1.5gb how do I get it down",
+      "category": "how-to",
+      "difficulty": 3,
+      "tranche": 2,
+      "note": "answer is multi-stage builds, slim/distroless bases, and layer ordering; query is framed as a symptom"
+    },
+    {
+      "id": "howto-rerun-command-on-file-change",
+      "text": "rerun a shell command every time a file changes",
+      "category": "how-to",
+      "difficulty": 3,
+      "tranche": 1,
+      "note": "answer is a file watcher (entr, watchexec, fswatch, inotifywait); the query names no tool"
+    },
+    {
+      "id": "howto-keep-job-running-after-closing-terminal",
+      "text": "keep a long running job going after I close the terminal",
+      "category": "how-to",
+      "difficulty": 3,
+      "tranche": 2,
+      "note": "answer is nohup / tmux / screen / systemd-run; query describes the goal, not the mechanism"
+    },
+    {
+      "id": "howto-move-postgres-database-between-machines",
+      "text": "move a postgres database from one machine to another",
+      "category": "how-to",
+      "difficulty": 3,
+      "tranche": 2,
+      "note": "answer is pg_dump/pg_restore with version-compat caveats; must not be satisfied by a generic backup page"
+    },
+    {
+      "id": "version-tailwind-v4-css-first",
+      "text": "tailwind v4 css first config theme directive migration",
+      "category": "version-specific",
+      "difficulty": 1,
+      "tranche": 1
+    },
+    {
+      "id": "version-react-19-forwardref-deprecated",
+      "text": "react 19 forwardRef deprecated ref as a prop",
+      "category": "version-specific",
+      "difficulty": 1,
+      "tranche": 2
+    },
+    {
+      "id": "version-node-fetch-global-no-flag",
+      "text": "which node version made fetch global without a flag",
+      "category": "version-specific",
+      "difficulty": 1,
+      "tranche": 1
+    },
+    {
+      "id": "version-python-312-distutils-removed",
+      "text": "python 3.12 removed distutils setuptools replacement",
+      "category": "version-specific",
+      "difficulty": 1,
+      "tranche": 2
+    },
+    {
+      "id": "version-eslint-9-flat-config-required",
+      "text": "eslint 9 flat config required eslintrc no longer supported",
+      "category": "version-specific",
+      "difficulty": 1,
+      "tranche": 2
+    },
+    {
+      "id": "version-typescript-5-standard-decorators",
+      "text": "typescript 5.0 standard decorators experimentalDecorators difference",
+      "category": "version-specific",
+      "difficulty": 1,
+      "tranche": 2
+    },
+    {
+      "id": "version-postgres-15-public-schema-permissions",
+      "text": "postgres 15 revoked create on public schema change",
+      "category": "version-specific",
+      "difficulty": 1,
+      "tranche": 2
+    },
+    {
+      "id": "version-next-pages-to-app-router-migration",
+      "text": "next.js migrate pages router to app router getServerSideProps replacement",
+      "category": "version-specific",
+      "difficulty": 2,
+      "tranche": 1
+    },
+    {
+      "id": "version-vite-6-breaking-changes",
+      "text": "vite 6 breaking changes migration environment api",
+      "category": "version-specific",
+      "difficulty": 2,
+      "tranche": 2
+    },
+    {
+      "id": "version-express-5-breaking-changes",
+      "text": "express 5 breaking changes async error handling path syntax",
+      "category": "version-specific",
+      "difficulty": 2,
+      "tranche": 1
+    },
+    {
+      "id": "version-rust-2021-edition-changes",
+      "text": "rust 2021 edition changes closure capture disjoint fields",
+      "category": "version-specific",
+      "difficulty": 2,
+      "tranche": 2
+    },
+    {
+      "id": "version-go-122-loop-variable-scope",
+      "text": "go 1.22 loop variable per iteration scope change",
+      "category": "version-specific",
+      "difficulty": 2,
+      "tranche": 1
+    },
+    {
+      "id": "version-k8s-ingress-networking-v1-migration",
+      "text": "kubernetes ingress extensions/v1beta1 to networking.k8s.io/v1 migration",
+      "category": "version-specific",
+      "difficulty": 2,
+      "tranche": 2
+    },
+    {
+      "id": "version-asyncio-timeout-replaces-async-timeout",
+      "text": "asyncio.timeout replaces async_timeout python 3.11",
+      "category": "version-specific",
+      "difficulty": 2,
+      "tranche": 2
+    },
+    {
+      "id": "version-webpack5-node-polyfills-removed",
+      "text": "webpack 5 no longer polyfills node core modules fallback config",
+      "category": "version-specific",
+      "difficulty": 2,
+      "tranche": 2
+    },
+    {
+      "id": "version-jest-to-vitest-config-migration",
+      "text": "migrate jest config to vitest globals setupFiles",
+      "category": "version-specific",
+      "difficulty": 2,
+      "tranche": 2
+    },
+    {
+      "id": "version-tailwind-v3-purge-renamed-content",
+      "text": "tailwind purge option renamed to content in v3",
+      "category": "version-specific",
+      "difficulty": 2,
+      "tranche": 2
+    },
+    {
+      "id": "version-mongodb-node-driver-4-callbacks-removed",
+      "text": "mongodb node driver 4 removed callbacks promises only",
+      "category": "version-specific",
+      "difficulty": 2,
+      "tranche": 2
+    },
+    {
+      "id": "version-utility-classes-stopped-after-upgrade",
+      "text": "utility classes stopped applying after upgrading tailwind",
+      "category": "version-specific",
+      "difficulty": 3,
+      "tranche": 1,
+      "note": "cause is the v4 content-detection and @import change; the query gives only the symptom and no version"
+    },
+    {
+      "id": "version-type-module-broke-everything",
+      "text": "switched package.json to type module and everything broke",
+      "category": "version-specific",
+      "difficulty": 3,
+      "tranche": 2,
+      "note": "requires the ESM/CJS interop rules (__dirname, require, extensions) rather than a single documented flag"
+    },
+    {
+      "id": "version-old-python-script-string-bytes",
+      "text": "old python script fails on strings that used to work fine",
+      "category": "version-specific",
+      "difficulty": 3,
+      "tranche": 2,
+      "note": "cause is the python 2 to 3 str/bytes split; the query names neither version nor encoding"
+    },
+    {
+      "id": "version-effect-runs-twice-in-dev",
+      "text": "my effect runs twice only in development after upgrading react",
+      "category": "version-specific",
+      "difficulty": 3,
+      "tranche": 1,
+      "note": "cause is StrictMode double-invocation introduced in React 18; page says 'remount', query says 'runs twice'"
+    },
+    {
+      "id": "version-openssl-3-legacy-provider",
+      "text": "old script that decrypted a file now fails after a system upgrade",
+      "category": "version-specific",
+      "difficulty": 3,
+      "tranche": 2,
+      "note": "cause is OpenSSL 3 moving legacy ciphers behind the legacy provider; nothing in the query names openssl"
+    },
+    {
+      "id": "version-jdk-illegal-reflective-access",
+      "text": "library that used reflection stopped working on a newer jdk",
+      "category": "version-specific",
+      "difficulty": 3,
+      "tranche": 2,
+      "note": "cause is JPMS strong encapsulation; fix is --add-opens, which the query cannot name"
+    },
+    {
+      "id": "version-docker-compose-command-not-found",
+      "text": "docker-compose command not found but docker is installed",
+      "category": "version-specific",
+      "difficulty": 3,
+      "tranche": 2,
+      "note": "cause is Compose V2 becoming the `docker compose` subcommand; reads like an install error, is a version change"
+    },
+    {
+      "id": "comparison-pnpm-vs-npm-workspaces",
+      "text": "pnpm vs npm workspaces",
+      "category": "comparison",
+      "difficulty": 1,
+      "tranche": 1
+    },
+    {
+      "id": "comparison-postgres-jsonb-vs-mysql-json",
+      "text": "postgres jsonb vs mysql json column differences",
+      "category": "comparison",
+      "difficulty": 1,
+      "tranche": 2
+    },
+    {
+      "id": "comparison-tcp-vs-udp-when-to-use",
+      "text": "tcp vs udp when to use which",
+      "category": "comparison",
+      "difficulty": 1,
+      "tranche": 2
+    },
+    {
+      "id": "comparison-rest-vs-grpc-internal-services",
+      "text": "rest vs grpc for internal service to service calls tradeoffs",
+      "category": "comparison",
+      "difficulty": 2,
+      "tranche": 1
+    },
+    {
+      "id": "comparison-rust-vs-go-cli-tools",
+      "text": "rust or go for writing a command line tool tradeoffs",
+      "category": "comparison",
+      "difficulty": 2,
+      "tranche": 2
+    },
+    {
+      "id": "comparison-podman-vs-docker-rootless",
+      "text": "podman vs docker rootless daemonless differences",
+      "category": "comparison",
+      "difficulty": 2,
+      "tranche": 1
+    },
+    {
+      "id": "comparison-sqlite-vs-postgres-small-app",
+      "text": "should I use sqlite or postgres for a small production app",
+      "category": "comparison",
+      "difficulty": 2,
+      "tranche": 2
+    },
+    {
+      "id": "comparison-vitest-vs-jest-esm",
+      "text": "vitest vs jest esm support and speed",
+      "category": "comparison",
+      "difficulty": 2,
+      "tranche": 2
+    },
+    {
+      "id": "comparison-uv-vs-poetry-vs-pip-tools",
+      "text": "uv vs poetry vs pip-tools python dependency management",
+      "category": "comparison",
+      "difficulty": 2,
+      "tranche": 1
+    },
+    {
+      "id": "comparison-server-components-vs-ssr",
+      "text": "react server components vs server side rendering difference",
+      "category": "comparison",
+      "difficulty": 2,
+      "tranche": 2
+    },
+    {
+      "id": "comparison-direct-call-vs-queue",
+      "text": "when should a service call another service directly and when should it go through a queue",
+      "category": "comparison",
+      "difficulty": 3,
+      "tranche": 1,
+      "note": "the real axis is synchronous coupling vs asynchronous decoupling; the query names no product and no pattern"
+    },
+    {
+      "id": "comparison-orm-or-hand-written-sql",
+      "text": "is it worth using an orm or just writing the queries by hand",
+      "category": "comparison",
+      "difficulty": 3,
+      "tranche": 2,
+      "note": "good pages weigh n+1 queries, migrations, and type safety; the query offers none of those anchors"
+    },
+    {
+      "id": "comparison-one-repo-or-many",
+      "text": "keep everything in one repo or split it up as the team grows",
+      "category": "comparison",
+      "difficulty": 3,
+      "tranche": 2,
+      "note": "answer is the monorepo vs polyrepo tradeoff; the query uses neither term"
+    },
+    {
+      "id": "comparison-in-process-cache-or-shared-cache",
+      "text": "should the cache live inside the app or in a separate service",
+      "category": "comparison",
+      "difficulty": 3,
+      "tranche": 2,
+      "note": "answer is in-process vs distributed cache (invalidation, coherence, memory); query avoids all of that vocabulary"
+    },
+    {
+      "id": "comparison-uuid-or-autoincrement-primary-key",
+      "text": "uuid or auto increment for a database primary key",
+      "category": "comparison",
+      "difficulty": 3,
+      "tranche": 2,
+      "note": "the deciding factors are index locality and page splits, which a shallow page will not mention at all"
+    },
+    {
+      "id": "general-lower-cortisol-naturally",
+      "text": "how to reduce cortisol levels naturally evidence",
+      "category": "general",
+      "difficulty": 1,
+      "tranche": 1,
+      "note": "wellness SEO farms dominate this SERP; planted to measure source precision against them"
+    },
+    {
+      "id": "general-roth-ira-income-phase-out",
+      "text": "roth ira income phase out limits married filing jointly",
+      "category": "general",
+      "difficulty": 1,
+      "tranche": 1,
+      "note": "personal-finance content farms dominate; the canonical source is the IRS page"
+    },
+    {
+      "id": "general-safe-internal-temperature-chicken",
+      "text": "safe internal temperature for cooked chicken usda",
+      "category": "general",
+      "difficulty": 1,
+      "tranche": 2,
+      "note": "recipe-blog SEO dominates; the canonical source is USDA/FSIS"
+    },
+    {
+      "id": "general-schengen-90-180-rule",
+      "text": "schengen 90 180 day rule how is it counted",
+      "category": "general",
+      "difficulty": 1,
+      "tranche": 1
+    },
+    {
+      "id": "general-how-mrna-vaccine-works",
+      "text": "how does an mrna vaccine work",
+      "category": "general",
+      "difficulty": 1,
+      "tranche": 2
+    },
+    {
+      "id": "general-electoral-college-certification",
+      "text": "how does the electoral college certify a presidential election",
+      "category": "general",
+      "difficulty": 1,
+      "tranche": 2
+    },
+    {
+      "id": "general-daily-fiber-intake-grams",
+      "text": "recommended daily fiber intake grams for adults",
+      "category": "general",
+      "difficulty": 1,
+      "tranche": 2,
+      "note": "nutrition content farms dominate; planted to measure them against dietary-guidelines sources"
+    },
+    {
+      "id": "general-why-is-the-sky-blue",
+      "text": "why is the sky blue rayleigh scattering",
+      "category": "general",
+      "difficulty": 1,
+      "tranche": 2
+    },
+    {
+      "id": "general-red-wine-stain-carpet",
+      "text": "how to get a red wine stain out of carpet",
+      "category": "general",
+      "difficulty": 1,
+      "tranche": 2,
+      "note": "classic consumer how-to SEO farm SERP; planted deliberately as a known v1 weak spot"
+    },
+    {
+      "id": "general-hsa-rollover-rules",
+      "text": "hsa contribution rules and whether unused funds roll over",
+      "category": "general",
+      "difficulty": 2,
+      "tranche": 1,
+      "note": "finance content farms dominate; canonical source is IRS Publication 969"
+    },
+    {
+      "id": "general-sourdough-starter-collapses",
+      "text": "sourdough starter doubles then collapses too fast",
+      "category": "general",
+      "difficulty": 2,
+      "tranche": 2,
+      "note": "food-blog SEO with long preambles; the actual answer is a short passage deep in the page"
+    },
+    {
+      "id": "general-vitamin-d-supplement-evidence",
+      "text": "vitamin d supplementation what dose is actually supported by evidence",
+      "category": "general",
+      "difficulty": 2,
+      "tranche": 1,
+      "note": "supplement-marketing farms dominate; good sources are NIH ODS and systematic reviews"
+    },
+    {
+      "id": "general-tire-sidewall-numbers-meaning",
+      "text": "what do the numbers and letters on a tire sidewall mean",
+      "category": "general",
+      "difficulty": 2,
+      "tranche": 2
+    },
+    {
+      "id": "general-heat-pump-below-freezing",
+      "text": "how does a heat pump still heat a house below freezing",
+      "category": "general",
+      "difficulty": 2,
+      "tranche": 1
+    },
+    {
+      "id": "general-mortgage-points-break-even",
+      "text": "are mortgage discount points worth buying break even",
+      "category": "general",
+      "difficulty": 2,
+      "tranche": 2,
+      "note": "lead-generation finance farms dominate; canonical source is CFPB"
+    },
+    {
+      "id": "general-espresso-runs-fast-tastes-sour",
+      "text": "why does my espresso shot run fast and taste sour",
+      "category": "general",
+      "difficulty": 2,
+      "tranche": 2,
+      "note": "coffee-gear affiliate SEO dominates; the answer is grind size, dose, and channeling"
+    },
+    {
+      "id": "general-jet-lag-light-timing-eastward",
+      "text": "light exposure timing to shift circadian rhythm after flying east",
+      "category": "general",
+      "difficulty": 2,
+      "tranche": 1
+    },
+    {
+      "id": "general-inverted-yield-curve-meaning",
+      "text": "what does an inverted yield curve actually mean",
+      "category": "general",
+      "difficulty": 2,
+      "tranche": 2
+    },
+    {
+      "id": "general-total-vs-added-sugars-label",
+      "text": "difference between total sugars and added sugars on a nutrition label",
+      "category": "general",
+      "difficulty": 2,
+      "tranche": 2,
+      "note": "nutrition farms dominate; the canonical source is the FDA label guidance"
+    },
+    {
+      "id": "general-active-noise-cancelling-headphones",
+      "text": "how do active noise cancelling headphones work",
+      "category": "general",
+      "difficulty": 2,
+      "tranche": 2
+    },
+    {
+      "id": "general-what-causes-aurora-green",
+      "text": "what causes the aurora and why is it green",
+      "category": "general",
+      "difficulty": 2,
+      "tranche": 1
+    },
+    {
+      "id": "general-mattress-firmness-side-sleepers",
+      "text": "mattress firmness for side sleepers what actually matters",
+      "category": "general",
+      "difficulty": 2,
+      "tranche": 2,
+      "note": "affiliate-review farms own this SERP end to end; planted as a worst-case source-precision test"
+    },
+    {
+      "id": "general-lease-mileage-overage-charges",
+      "text": "how do lease mileage overage charges work",
+      "category": "general",
+      "difficulty": 2,
+      "tranche": 2
+    },
+    {
+      "id": "general-budget-reconciliation-senate",
+      "text": "what is budget reconciliation in the us senate",
+      "category": "general",
+      "difficulty": 2,
+      "tranche": 1
+    },
+    {
+      "id": "general-caffeine-half-life-sleep",
+      "text": "caffeine half life how late is too late for coffee",
+      "category": "general",
+      "difficulty": 2,
+      "tranche": 2,
+      "note": "sleep-wellness farms dominate; good answers cite the ~5 hour half-life and controlled trials"
+    },
+    {
+      "id": "general-expense-ratio-cost-over-30-years",
+      "text": "how much does an expense ratio actually cost over 30 years",
+      "category": "general",
+      "difficulty": 2,
+      "tranche": 2
+    },
+    {
+      "id": "general-bread-stales-faster-in-fridge",
+      "text": "why does bread get hard faster in the fridge than on the counter",
+      "category": "general",
+      "difficulty": 3,
+      "tranche": 1,
+      "note": "answer is starch retrogradation, not drying out; the good page uses a term the query cannot contain"
+    },
+    {
+      "id": "general-house-feels-cold-same-thermostat",
+      "text": "house feels colder at the same thermostat setting in winter",
+      "category": "general",
+      "difficulty": 3,
+      "tranche": 2,
+      "note": "answer is radiant heat loss / mean radiant temperature and low humidity; query is symptom-only"
+    },
+    {
+      "id": "general-overbooked-flight-compensation",
+      "text": "why do planes get oversold and what am I owed if I get bumped",
+      "category": "general",
+      "difficulty": 3,
+      "tranche": 2,
+      "note": "two-part need: overbooking economics plus denied-boarding compensation rules from a regulator page"
+    },
+    {
+      "id": "general-cooking-at-altitude-takes-longer",
+      "text": "food takes longer to cook in the mountains even though water boils sooner",
+      "category": "general",
+      "difficulty": 3,
+      "tranche": 1,
+      "note": "requires the pressure/boiling-point relationship, not the folk answer; query states an apparent contradiction"
+    },
+    {
+      "id": "general-waking-up-in-the-middle-of-the-night",
+      "text": "keep waking up in the middle of the night and can't fall back asleep",
+      "category": "general",
+      "difficulty": 3,
+      "tranche": 2,
+      "note": "sleep-maintenance insomnia; heavily SEO-farmed, and good sources use clinical vocabulary the query lacks"
+    },
+    {
+      "id": "general-electric-bill-jumped-same-usage",
+      "text": "electric bill jumped but I did not change anything",
+      "category": "general",
+      "difficulty": 3,
+      "tranche": 2,
+      "note": "answer spans rate tiers, seasonal rates, and degree days; requires structural reasoning, not a keyword hit"
+    },
+    {
+      "id": "general-flight-delayed-in-europe-claim",
+      "text": "airline delayed my flight five hours in europe what can I claim",
+      "category": "general",
+      "difficulty": 3,
+      "tranche": 2,
+      "note": "answer is EU261 compensation tiers; the query never names the regulation, and claim-farm sites crowd the SERP"
+    },
+    {
+      "id": "general-tomatoes-lose-flavor-in-fridge",
+      "text": "tomatoes lose flavor after being in the fridge",
+      "category": "general",
+      "difficulty": 3,
+      "tranche": 2,
+      "note": "answer is cold-induced suppression of volatile aroma compounds; the source vocabulary is entirely different"
+    },
+    {
+      "id": "general-how-lenders-size-a-mortgage",
+      "text": "how do lenders decide the biggest mortgage they will give me",
+      "category": "general",
+      "difficulty": 3,
+      "tranche": 2,
+      "note": "answer is the debt-to-income ratio with front-end/back-end limits; query never says DTI, and calculator farms dominate"
+    }
+  ]
+}

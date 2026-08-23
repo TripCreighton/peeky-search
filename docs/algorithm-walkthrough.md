@@ -1,5 +1,12 @@
 # Algorithm Walkthrough
 
+> **This describes the v1 pipeline, which is no longer what runs.** The MCP
+> server serves v2 (`src/v2/`); v1 is retained only as the evaluation harness's
+> baseline. This walkthrough is still an accurate trace of v1's sentence-level
+> BM25 + heuristics approach, and is kept because the baseline has to be
+> understandable. For what actually serves a search today, see the "How it
+> works" section of the [README](../README.md).
+
 This document explains how peeky-search extracts relevant excerpts from HTML documents, step by step, using a concrete example.
 
 ## The Example
