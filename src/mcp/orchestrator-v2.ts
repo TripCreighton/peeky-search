@@ -23,7 +23,7 @@ import { tokenize } from "../preprocessing/tokenize";
 import { fetchDoc } from "../v2/fetch/resolver";
 import { resolveConfig, searchV2 } from "../v2/pipeline";
 import { buildPassages } from "../v2/passages";
-import type { V2Page, V2Result } from "../v2/pipeline";
+import type { PageOrderConfig, V2Page, V2Result } from "../v2/pipeline";
 import type { AssembleBudget } from "../v2/assemble";
 import { DEFAULT_CONFIG } from "./types";
 import Logger from "../utils/logger";
@@ -38,6 +38,8 @@ export interface SearchV2Options {
     debug?: boolean;
     /** Assembly budget overrides. The URL-survey path re-budgets; search does not. */
     budget?: AssembleBudget;
+    /** Page-ordering overrides. The URL-survey path partitions canonical first; search does not. */
+    pageOrder?: Partial<PageOrderConfig>;
     /**
      * Whether the URLs returned are recorded against `sessionKey`.
      *
@@ -149,6 +151,7 @@ export async function runSearchV2(query: string, opts: SearchV2Options = {}): Pr
         // returns 5 and asking for 10 also returns 5.
         result = await searchV2(extractionQuery, newUrls, (url) => fetchDoc(url), {
             budget: { maxDocs: maxResults, ...opts.budget },
+            ...(opts.pageOrder !== undefined ? { pageOrder: opts.pageOrder } : {}),
         });
     } catch (error) {
         const message = error instanceof Error ? error.message : "unknown error";
@@ -243,10 +246,36 @@ const SURVEY_BUDGET: AssembleBudget = {
     relevanceFloor: 0.15,
 };
 
+/**
+ * Page ordering for a survey.
+ *
+ * The survey answers "what is out there, which should I read", and for that
+ * question the project's own documentation belongs at the top whether or not it
+ * happened to win the score key. Under the default multiplicative boost it does
+ * not reliably: measured live on "react useEffect cleanup function",
+ * react.dev's best passage scores 0.750 against w3schools' 0.795, so react.dev
+ * leads only while it also holds a good SERP position — and SERP position moves
+ * between runs, so the same query returned react.dev at rank 1 on one call and
+ * behind a blog on another.
+ *
+ * `canonicalBoost` stays where it is. It still orders the canonical pages among
+ * themselves and it is still what search uses.
+ *
+ * THIS AND `SURVEY_BUDGET.relevanceFloor` ARE COUPLED, and neither works alone.
+ * A partition can only reorder pages assembly actually selected, and at search's
+ * default floor of 0.35 a canonical page whose passages score below a third of
+ * the best candidate is dropped from the result entirely — there is then nothing
+ * left to promote. The pipeline test builds exactly that document and shows it:
+ * under the search budget the canonical page does not appear at all; under the
+ * survey budget it appears second, and the partition moves it to first. Raising
+ * the floor back towards 0.35 would silently re-break this.
+ */
+const SURVEY_PAGE_ORDER: Partial<PageOrderConfig> = { canonicalFirst: true };
+
 /** Longest teaser shown under a survey row. One line, not an excerpt. */
 const SURVEY_TEASER_CHARS = 160;
 
-export interface SurveyOptions extends Omit<SearchV2Options, "budget" | "recordSession"> {
+export interface SurveyOptions extends Omit<SearchV2Options, "budget" | "pageOrder" | "recordSession"> {
     /** Include the authority reasons behind each score. Off by default: verbose. */
     explain?: boolean;
 }
@@ -262,6 +291,9 @@ export async function surveySourcesV2(query: string, opts: SurveyOptions = {}): 
     const outcome = await runSearchV2(query, {
         ...opts,
         budget: SURVEY_BUDGET,
+        // The project's own manual goes first, not "first unless it drew a poor
+        // SERP position that minute". See `canonicalFirst` in pipeline.ts.
+        pageOrder: SURVEY_PAGE_ORDER,
         // The caller has been TOLD about these pages, not shown them. Recording
         // them would make the follow-up search skip its own recommendations.
         recordSession: false,

@@ -277,6 +277,153 @@ describe("searchV2: authority in page ordering", () => {
         expect(result.pages[0]?.authority.canonical).toBe(true);
     });
 
+    describe("canonicalFirst", () => {
+        /**
+         * The survey's own assembly budget. Testing the partition under search's
+         * default would test nothing: at `relevanceFloor: 0.35` the outmatched
+         * canonical page below is floored out of assembly entirely, and a
+         * partition cannot promote a page that was never selected. The two
+         * survey knobs are coupled, and this is where that shows.
+         */
+        const SURVEY = { maxPassagesPerDoc: 1, maxCharsPerDoc: 400, totalChars: 4500, relevanceFloor: 0.15 };
+
+        /** Canonical, substantive, and beaten on the score key by a blog that names the library repeatedly. */
+        const outmatchedOfficial = (): Doc => ({
+            url: "https://timeoutlib.example/docs/timeouts",
+            title: "Timeouts",
+            kind: "reference",
+            source: "html",
+            nodes: [
+                node("Timeouts", 0, { kind: "heading", level: 2 }),
+                ...[1, 2, 3, 4, 5].map((i) =>
+                    node(
+                        `Section ${i}. The timeout option is configurable and is measured across the whole ` +
+                            "exchange rather than per socket read. The configuration reference lists every " +
+                            "accepted value and unit, and explains how the abort is propagated to callers.",
+                        i,
+                        { headingPath: ["Timeouts"] },
+                    ),
+                ),
+            ],
+        });
+
+        const strongCommentary = (): Doc => ({
+            url: "https://someblog.example/posts/timeouts",
+            title: "Timeouts and one blogger's reading",
+            kind: "guide",
+            source: "html",
+            nodes: [
+                node("Configure the timeout", 0, { kind: "heading", level: 2 }),
+                ...[1, 2, 3, 4, 5].map((i) =>
+                    node(
+                        `Paragraph ${i} about timeoutlib. The timeoutlib timeout option default controls how ` +
+                            "long a timeoutlib request may run before it is aborted, and the default is thirty " +
+                            "seconds measured across the whole exchange rather than per socket read.",
+                        i,
+                        { headingPath: ["Configure the timeout"] },
+                    ),
+                ),
+            ],
+        });
+
+        it("is off by default, so search's measured ordering is unchanged", async () => {
+            const official = outmatchedOfficial();
+            const blog = strongCommentary();
+
+            const result = await searchV2(
+                "timeoutlib timeout option default",
+                [blog.url, official.url],
+                fetcherFor([blog, official]),
+                { canonicalHosts: ["timeoutlib.example"], budget: SURVEY },
+            );
+
+            expect(resolveConfig({}).pageOrder.canonicalFirst).toBe(false);
+            // The blog wins the score key outright, and nothing overrides it.
+            expect(result.pages[0]?.url).toBe(blog.url);
+            expect(result.pages[1]?.authority.canonical).toBe(true);
+        });
+
+        it("puts the canonical page first even when it loses the score key", async () => {
+            const official = outmatchedOfficial();
+            const blog = strongCommentary();
+
+            const result = await searchV2(
+                "timeoutlib timeout option default",
+                [blog.url, official.url],
+                fetcherFor([blog, official]),
+                {
+                    canonicalHosts: ["timeoutlib.example"],
+                    budget: SURVEY,
+                    pageOrder: { canonicalFirst: true },
+                },
+            );
+
+            expect(result.pages[0]?.url).toBe(official.url);
+            expect(result.pages[0]?.authority.canonical).toBe(true);
+            expect(result.pages[0]?.rank).toBe(1);
+            // Everything else keeps its place behind the partition.
+            expect(result.pages[1]?.url).toBe(blog.url);
+        });
+
+        it("orders canonical pages among themselves by the usual key", async () => {
+            const weak = outmatchedOfficial();
+            // Distinct wording, not a copy: assembly's novelty check drops a
+            // near-duplicate outright, which would remove the page under test.
+            const strong: Doc = {
+                url: "https://timeoutlib.example/docs/configuration",
+                title: "Configuration",
+                kind: "reference",
+                source: "html",
+                nodes: [
+                    node("Configuration", 0, { kind: "heading", level: 2 }),
+                    ...[1, 2, 3, 4, 5].map((i) =>
+                        node(
+                            `Entry ${i}. timeoutlib reads the timeout option from its configuration file, and ` +
+                                "the default applies when no explicit timeout is given. Values are parsed as " +
+                                "milliseconds unless a unit suffix names something else.",
+                            i,
+                            { headingPath: ["Configuration"] },
+                        ),
+                    ),
+                ],
+            };
+            const blog = strongCommentary();
+
+            const result = await searchV2(
+                "timeoutlib timeout option default",
+                [blog.url, weak.url, strong.url],
+                fetcherFor([blog, weak, strong]),
+                {
+                    canonicalHosts: ["timeoutlib.example"],
+                    budget: SURVEY,
+                    pageOrder: { canonicalFirst: true },
+                },
+            );
+
+            // Both canonical pages precede the blog...
+            expect(result.pages.slice(0, 2).every((p) => p.authority.canonical)).toBe(true);
+            expect(result.pages[2]?.url).toBe(blog.url);
+            // ...and the better-matching of the two still leads.
+            expect(result.pages[0]?.url).toBe(strong.url);
+        });
+
+        it("changes nothing when no page is canonical", async () => {
+            const docs = [
+                article("https://a.example/guide/timeouts", "subject a"),
+                article("https://b.example/guide/timeouts", "subject b"),
+            ];
+            const urls = docs.map((d) => d.url);
+
+            const plain = await searchV2("timeout option default", urls, fetcherFor(docs), { budget: SURVEY });
+            const partitioned = await searchV2("timeout option default", urls, fetcherFor(docs), {
+                budget: SURVEY,
+                pageOrder: { canonicalFirst: true },
+            });
+
+            expect(partitioned.pages.map((p) => p.url)).toEqual(plain.pages.map((p) => p.url));
+        });
+    });
+
     it("folds the search engine's ordering into authority, not into relevance", async () => {
         const target = article("https://target.example/guide/timeouts", "the page under test");
         const filler = Array.from({ length: 15 }, (_, i) =>

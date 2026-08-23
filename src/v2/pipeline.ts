@@ -124,7 +124,7 @@ export interface V2Config {
      */
     canonicalHosts?: string[];
     budget?: AssembleBudget;
-    pageOrder?: PageOrderConfig;
+    pageOrder?: Partial<PageOrderConfig>;
     /**
      * OPTIONAL cross-encoder reranking of the first stage's top candidates.
      * OFF unless a `scorer` is supplied — see `rerank.ts`. It is a
@@ -206,6 +206,37 @@ export interface PageOrderConfig {
      */
     canonicalBoost: number;
     /**
+     * Sort every canonical document ahead of every non-canonical one, before
+     * the score key is consulted at all.
+     *
+     * OFF by default, and it must stay off for search: every published number
+     * describes the multiplicative `canonicalBoost`, and a hard partition is a
+     * different ordering that no run file has ever scored.
+     *
+     * It exists for the SURVEY path, where the question being asked is
+     * different. `canonicalBoost` says "weight the project's own manual more
+     * heavily"; because it multiplies `best`, whether the manual actually lands
+     * first depends on the SERP position it happened to draw that minute.
+     * Measured live on "react useEffect cleanup function": react.dev scores
+     * best=0.750 against w3schools' best=0.795 and wins only once the boost and
+     * a position-0 SERP prior are applied — draw a worse position and a blog
+     * takes the top slot. For a list whose entire job is "here is what exists,
+     * pick one to read", that instability is the defect.
+     *
+     * Safe to partition on because `Authority.canonical` is a tight signal:
+     * either a structural claim (declared homepage, standards body, primary
+     * source, the project's own domain serving its own docs, cited by enough
+     * peers) or a pre-prior score at or above `canonicalThreshold`. Critically,
+     * that threshold is evaluated inside `scoreAuthority`, BEFORE
+     * `applySerpPrior` runs — so ranking well cannot make a page canonical. A
+     * Stack Overflow answer sitting at 0.89 after the prior is still correctly
+     * not canonical.
+     *
+     * Canonical documents keep their relative order among themselves, and so do
+     * the rest; this only moves the boundary between the two groups.
+     */
+    canonicalFirst: boolean;
+    /**
      * How strongly the search engine's own ordering shifts a document's
      * AUTHORITY (see `applySerpPrior`). 0 disables it.
      */
@@ -227,6 +258,8 @@ export const DEFAULT_PAGE_ORDER: PageOrderConfig = {
     serpRank: 0.25,
     serpDepth: 10,
     canonicalBoost: 0.35,
+    // Off: search's ordering is the measured one. See the field's comment.
+    canonicalFirst: false,
     serpPrior: 0.7,
     serpPriorDepth: 16,
 };
@@ -744,6 +777,12 @@ export async function searchV2(
     }
 
     unranked.sort((a, b) => {
+        // The partition, when asked for, outranks the score key entirely.
+        if (settings.pageOrder.canonicalFirst) {
+            const left = a.page.authority.canonical ? 1 : 0;
+            const right = b.page.authority.canonical ? 1 : 0;
+            if (left !== right) return right - left;
+        }
         const diff = b.key - a.key;
         if (diff !== 0) return diff;
         return a.page.url.localeCompare(b.page.url);
