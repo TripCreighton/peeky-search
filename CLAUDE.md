@@ -12,6 +12,7 @@ peeky-search is an MCP web-search server for coding agents. It queries a local S
 |---|---|---|
 | MCP `peeky_web_search` | **serves this** | no |
 | MCP `peeky_fetch_page` | **serves this** | no |
+| MCP `peeky_find_sources` | **serves this** | no |
 | CLI `--search --pipeline v2` | yes | — |
 | CLI `--search` (default), `--fetch`, `--url`, `--file` | — | yes |
 | Eval harness `--pipeline v1` | — | yes |
@@ -92,8 +93,8 @@ src/
 │   └── adapters/         # v1.ts, v2.ts, oracle.ts
 │
 ├── mcp/
-│   ├── server.ts         # MCP entry. Both tools are wired to orchestrator-v2
-│   ├── orchestrator-v2.ts    # searchV2Mcp() and fetchPageV2() — WHAT SHIPS
+│   ├── server.ts         # MCP entry. All three tools are wired to orchestrator-v2
+│   ├── orchestrator-v2.ts    # runSearchV2() + formatters + fetchPageV2() — WHAT SHIPS
 │   ├── orchestrator.ts   # v1 search/fetchPage + session dedup. Baseline only
 │   ├── query-parser.ts   # v1 operator parsing (v2/query.ts mirrors it exactly)
 │   ├── searxng.ts        # SearXNG API client
@@ -117,6 +118,16 @@ eval/                     # Harness DATA. Mostly gitignored — see below
 `tokenize.ts` and `bm25.ts` are shared: v2 uses v1's tokenizer and IDF primitives. They are not v1-only code.
 
 ## Architecture
+
+### The three MCP tools
+
+| Tool | Returns | Typical output |
+|---|---|---|
+| `peeky_web_search` | verbatim excerpts, heading path, source URL | ~11k chars |
+| `peeky_find_sources` | ranked URL list: kind, source, authority, one teaser line | ~1.7k chars |
+| `peeky_fetch_page` | one page, whole or query-focused | ≤12k chars |
+
+Tool descriptions are the only part of this package that costs a caller tokens on **every** turn. The current three total ~1,030 tokens on the wire; the previous two totalled ~1,460. Operator syntax is stated once, in a shared `OPERATORS` constant. **When editing a description, check the wire size rather than the source length** — the JSON schema is half of it.
 
 ### v2 pipeline
 
@@ -151,6 +162,19 @@ SearXNG is asked for `maxResults * 2` URLs because v2 drops documents that fail 
 `fetchPageV2` exists for **capability**, not scoring: v1's `fetchPage` is a raw HTML GET, so Stack Overflow (403s every UA) and GitHub (JS-rendered) always failed. With a query it runs the same `searchV2` used by search, so ranking and assembly match; without one it returns the whole readable document in order up to 12,000 chars.
 
 **`diagnostics` was removed from the MCP schema.** It reported on v1 filter stages this path does not have. An argument a model can pass that silently does nothing is worse than no argument.
+
+`peeky_find_sources` is the same run, listed rather than quoted: `runSearchV2` with `SURVEY_BUDGET` and a different formatter, so its ORDERING is identical to what `peeky_web_search` would have produced. Three things about it are load-bearing:
+
+- **It cannot skip assembly.** A page reaches `V2Result.pages` only if assembly selected a passage from it, so a survey has to re-budget (one short passage per doc, from many docs) rather than bypass the stage.
+- **`relevanceFloor` drops to 0.15.** The 0.35 default is the "never pad the budget" rule, which is right when every character is quoted back and wrong for a survey — ask for ten sources at 0.35 and you get four, with no sign the other six existed.
+- **`pageOrder.canonicalFirst` is on.** Canonical documents sort ahead of everything else before the score key is consulted. Under the default multiplicative `canonicalBoost` alone, whether the project's own manual leads depends on the SERP position it drew that minute: measured live on "react useEffect cleanup function", react.dev's best passage scores 0.750 against w3schools' 0.795, so it led on one call and sat behind a blog on the next. **This is coupled to the floor above** — a partition can only reorder pages assembly selected, and at 0.35 an outmatched canonical page is dropped from the result entirely, leaving nothing to promote. Raising the floor back silently re-breaks it.
+- **It does NOT write to the session.** The caller has been *told* about these pages, not shown them; recording them would make the follow-up `peeky_web_search` skip its own recommendations. Hence `recordSession: false`.
+
+`Authority.canonical` is tight enough to partition on: it needs a structural claim (declared homepage, standards body, primary source, the project's own domain serving its own docs, enough peer citations) or a score at or above `canonicalThreshold` — and that threshold is evaluated inside `scoreAuthority`, **before** `applySerpPrior`, so ranking well can never make a page canonical. What it does *not* cover is a documentation site that is neither the project's domain nor a standards body: MDN on a CSS query scores 0.85 and is not flagged, so the partition is a no-op there. `canonicalHosts` is the field designed for that and nothing populates it on the MCP path yet.
+
+`SURVEY_BUDGET` and `SURVEY_PAGE_ORDER` are **not measured** — every published number describes the search budget and the multiplicative boost. The metrics that would judge it (`sourcePrecision`, `canonicalMrr`, `badRate`) are page-level and already exist, so it is scoreable against the current labels as soon as a corpus is recorded.
+
+**`finalUrl` means "the fetch followed a redirect", not "where the bytes came from".** The formatters cite `finalUrl ?? url`, so an adapter that sets it to a machine-readable endpoint hands the model that endpoint to quote and follow. The markdown adapter used to set it to the `.md` sibling and the registry adapter to `registry.npmjs.org/…`; both now leave it unset, and only `html.ts` — where it is a genuine redirect target — still sets it.
 
 ### v1 pipeline (baseline only)
 
@@ -258,6 +282,8 @@ pnpm eval docs                           # structured-doc coverage
 
 Consequence for tooling: `eval/labels/` exists only on the machine that authored it, and git will not warn before an operation destroys ignored files. Treat it as unbacked user data.
 
+**This has already happened once.** `eval/corpus/` was lost; `eval/labels/` survived in a separate backup directory and was restored (194 of 200 queries). That asymmetry is worth knowing because the two halves cost very different amounts to rebuild: the corpus is a `peeky-eval record` pass — hours of paced network, bounded by Stack Exchange's 300 requests/day — while the labels are the expensive, human-authored half. **Back up `eval/labels/` deliberately; the corpus can always be re-recorded.** Note that numbers from a re-recorded corpus are not comparable to older runs, so a fresh v1-vs-v2 pair has to be re-run together.
+
 ## TypeScript Conventions
 
 ### Strict mode
@@ -331,7 +357,9 @@ sorted.sort((a, b) => {
 
 ## Testing
 
-**Vitest.** Config `vitest.config.ts`, pattern `src/**/*.test.ts` and `src/**/__tests__/**/*.ts`, node environment, 10s timeout. 900 tests.
+**Vitest.** Config `vitest.config.ts`, pattern `src/**/*.test.ts` and `src/**/__tests__/**/*.ts`, node environment, 10s timeout. 933 tests.
+
+**15 of them fail without `eval/corpus/`**, which is gitignored and machine-local. They do not skip — `pagekind.test.ts` pins four cached pages by hash, and `parse.test.ts` / `passages.test.ts` sweep the corpus directory. On a checkout with no corpus the suite reads `15 failed | 912 passed` before anyone touches anything, so *check that number before blaming a change for it*.
 
 ```bash
 pnpm test           # watch
@@ -341,7 +369,7 @@ pnpm test:coverage  # V8 coverage into coverage/
 
 Tests are co-located in `__tests__/` next to the code. Describe/it/expect with explicit imports, arrange-act-assert separated by blank lines, fixtures loaded in `beforeAll`. Integration tests use `test-fixtures/*.html`; `src/v2/__tests__/fixtures/` holds v2's parser fixtures.
 
-**`src/mcp/orchestrator-v2.ts` has no test coverage at all.** It is the module that ships. That is the highest-value gap in the suite, along with a test pinning the live fetch path and the eval adapter to the same parser output.
+`src/mcp/__tests__/orchestrator-v2.test.ts` covers the two formatters as pure functions over a fixed `V2Result`. That became possible only once `runSearchV2` was split out of `searchV2Mcp`; while the module was one string-returning function, testing the rendering meant running a search. **Still missing: a test pinning the live fetch path and the eval adapter to the same parser output.**
 
 ## Build Configuration
 
@@ -359,7 +387,16 @@ The general form, which has recurred five times here: *a gain, a corpus, or a pa
 
 ### Sweeping UI text near code
 
-`removeUIElements` sweeps `a, span, div, p` anywhere in the container. Syntax highlighters wrap every token in its own span, so the sweep once tested code identifiers against UI patterns and `/^(scroll\s*to\s*)?top$/i` — whose prefix is optional, reducing it to `/^top$/i` — deleted every `top` in a CSS block. Code is now exempt, but the other patterns are loosely written and `copy`/`share`/`feedback` remain hazards for prose.
+`removeUIElements` sweeps `a, span, div, p` anywhere in the container, and `emit()` filters every node again on its way into the document. Syntax highlighters wrap every token in its own span, so the sweep reaches individual identifiers.
+
+The pattern list is now **two tiers**, and the split is the fix for a bug that ran much wider than it looked. Five of the ten original patterns had an optional prefix or an optional object, so each reduced to a bare content word: `/^(scroll\s*to\s*)?top$/i` to `/^top$/i`, and the same for `copy`, `share`, `edit`, `feedback`. Those are real headings on real pages — the Dockerfile reference's `COPY`, MDN's `top`, the Web Share API's `Share` — and because `emit()` had no code exemption and no element to inspect, a match deleted the heading outright. A deleted heading also drops out of `headingPath`, so everything below it is filed under the wrong section. The list was, in fact, exactly inverted: it dropped those five content words and kept all three residues a copy widget leaves behind (`Copied!`, `Copy to clipboard`, `copied`).
+
+- `UI_TEXT_PATTERNS` (safe) — every pattern names its object; no optional group may reduce one to a single word. Applied everywhere, `emit()` included. `code` nodes are exempt outright.
+- `UI_TEXT_WEAK_PATTERNS` (bare words) — fires only when `looksLikeControl()` agrees: an interactive role, an anchor that goes nowhere, a clipboard `data-*` hook, or a UI-ish class/`aria-label`. Never on a heading.
+
+**Keep the invariant when adding a pattern: if it can match a word a page might legitimately use as a heading, it belongs in the weak tier.**
+
+`CODE_CLEANUP_PATTERNS` had the same flaw with worse consequences — a leading `\s*` matches zero characters, so `/\s*(Try|Run|Copy)\s*$/` fired on any code block whose last token merely *ended with* the word, turning `err := io.Copy` into `err := io.`. Each pattern now requires the artifact to start its own line.
 
 ### Environment
 

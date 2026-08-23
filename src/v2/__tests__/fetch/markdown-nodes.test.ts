@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { markdownToNodes } from "../../fetch/markdown-nodes";
+import { markdownToNodes, parseMarkdownDocument } from "../../fetch/markdown-nodes";
 
 describe("markdownToNodes", () => {
     it("extracts headings with level and tracks heading path", () => {
@@ -79,5 +79,66 @@ describe("markdownToNodes", () => {
 
     it("returns an empty array for empty input", () => {
         expect(markdownToNodes("")).toEqual([]);
+    });
+});
+
+/**
+ * MDX scaffolding.
+ *
+ * The sample is invented, but its SHAPE is the thing under test and that shape
+ * is real: doc sites serve MDX source at text/plain, with YAML frontmatter,
+ * JSX component wrappers, and heading anchors written as an MDX comment, which
+ * a CommonMark parser has no notion of.
+ */
+describe("markdownToNodes: MDX scaffolding", () => {
+    const md = `---
+title: useTimer
+---
+
+<Intro>
+
+\`useTimer\` is a hook supplied by the example library.
+
+</Intro>
+
+<InlineToc />
+
+---
+
+## Reference {/*reference*/}
+
+### \`useTimer(setup, options?)\` {/*usetimer*/}
+
+Call it at the top level.
+`;
+
+    it("reads the title from frontmatter", () => {
+        expect(parseMarkdownDocument(md).frontmatterTitle).toBe("useTimer");
+    });
+
+    it("strips anchors, frontmatter and JSX scaffolding", () => {
+        const { nodes } = parseMarkdownDocument(md);
+
+        expect(nodes.map((n) => `${n.kind}:${n.text}`)).toEqual([
+            "prose:\`useTimer\` is a hook supplied by the example library.",
+            "heading:Reference",
+            "heading:\`useTimer(setup, options?)\`",
+            "prose:Call it at the top level.",
+        ]);
+        // The anchor must not survive into the path either: it feeds
+        // heading-match scoring and is printed in the MCP output.
+        expect(nodes[3]?.headingPath).toEqual(["Reference", "\`useTimer(setup, options?)\`"]);
+    });
+
+    it("strips {#custom-id} anchors as well", () => {
+        expect(markdownToNodes("## Getting started {#start}")[0]?.text).toBe("Getting started");
+    });
+
+    it("keeps a line that has text beside a tag", () => {
+        expect(markdownToNodes("Use <code>foo</code> for that.")[0]?.text).toBe("Use <code>foo</code> for that.");
+    });
+
+    it("does not treat a --- further down the file as frontmatter", () => {
+        expect(parseMarkdownDocument("# T\n\nbody\n").frontmatterTitle).toBeUndefined();
     });
 });

@@ -156,7 +156,10 @@ export const registryAdapter: SourceAdapter = {
 
         return {
             url,
-            finalUrl: registryUrl,
+            // NO `finalUrl`. `registryUrl` is the JSON endpoint the bytes came
+            // from; `url` is the npmjs.com package page a reader can open. The
+            // MCP formatters cite `finalUrl ?? url`, so setting it here gave the
+            // model `registry.npmjs.org/foo` as the source to quote and follow.
             title: latestVersion !== undefined ? `${doc.name}@${latestVersion}` : doc.name,
             kind: "reference",
             source: "registry",

@@ -12,8 +12,8 @@ There is no summarization step. Nothing is paraphrased, nothing is passed
 through a second model, and no query leaves your machine except to the search
 engines SearXNG queries on your behalf.
 
-Install it as an MCP server and your agent gets two tools: `peeky_web_search`
-and `peeky_fetch_page`.
+Install it as an MCP server and your agent gets three tools: `peeky_web_search`,
+`peeky_find_sources`, and `peeky_fetch_page`.
 
 ## Example
 
@@ -132,6 +132,36 @@ Search, fetch the results, and return the passages that answer the query.
 
 Returns one section per page: the title as a link, then each excerpt preceded by
 the heading path it sits under. Code blocks keep their fences.
+
+### `peeky_find_sources`
+
+Rank sources for a query and list them, without the excerpts. The same pipeline
+run as `peeky_web_search` and the same ranking — roughly a tenth of the output.
+
+| Parameter | Type | Description |
+|---|---|---|
+| `query` | string, required | Same operators as `peeky_web_search` |
+| `maxResults` | number | Sources to list. Default 5, clamped to 1–10 |
+| `explain` | boolean | Show the signals behind each authority score. Verbose |
+| `sessionKey` | string | Skips pages already fetched under the key. Listing a page does not itself mark it fetched |
+
+Returns one row per source: rank, title, URL, page kind, which adapter read it,
+its authority score, and one line of what it says.
+
+```
+1. useTimer
+   https://timerlib.example/reference/use-timer
+   reference · via markdown · authority 0.91 · CANONICAL
+   "useTimer schedules a callback and clears it on unmount."
+```
+
+`CANONICAL` marks a page as the source of truth for something the query named —
+the project's own documentation, a standards body, or a page enough of the other
+results cite. Canonical sources are listed first.
+
+Use it to survey before committing tokens: when you expect several candidates
+and want to read one or two in full, when you want the canonical documentation
+URL rather than its contents, or when gathering references to cite.
 
 ### `peeky_fetch_page`
 
@@ -313,7 +343,7 @@ your own corpus are what it is for.
 pnpm install
 pnpm build          # tsup -> dist/
 pnpm test           # vitest, watch
-pnpm test:run       # single run (900 tests)
+pnpm test:run       # single run (937 tests)
 pnpm build:tsc      # type-check only
 ```
 

@@ -1,81 +1,65 @@
 /**
- * MCP Server entry point
+ * MCP Server entry point.
+ *
+ * Tool descriptions are the one part of this package that costs the caller
+ * tokens on EVERY turn, whether or not a tool is used. The previous set ran to
+ * ~1,400 tokens across two tools and said several things twice — sessionKey in
+ * both the prose and the parameter, `site:` in two sections, quoting in two
+ * more, and the fetch cross-reference in both tools. What survives here is the
+ * part that changes behaviour and that a model cannot infer: operator syntax,
+ * and the habit of anchoring a query with the project's own stack.
  */
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
-import { searchV2Mcp, fetchPageV2 } from "./orchestrator-v2";
+import { searchV2Mcp, fetchPageV2, surveySourcesV2 } from "./orchestrator-v2";
 import Logger from "../utils/logger";
 
 const logger = Logger.getInstance();
 
-// Create MCP server
 const server = new McpServer({
     name: "peeky_mcp",
-    version: "1.0.0",
+    // Tracks the package version; this string is what clients log and display.
+    version: "2.0.0",
 });
 
-// Register the search tool
-server.tool(
+/**
+ * Both tools read the public web and change nothing. `openWorldHint` is the
+ * honest value for a search tool, and `readOnlyHint` lets a host skip an
+ * approval prompt it would otherwise have to raise.
+ */
+const READ_ONLY = { readOnlyHint: true, openWorldHint: true } as const;
+
+/** Shared by all three tools, so operator syntax is stated exactly once. */
+const OPERATORS = `Operators: site:domain.com, "exact phrase", -exclude. OR/AND may join site: operators (site:github.com OR site:stackoverflow.com) and are stripped before ranking; elsewhere "OR" is treated as a search word. Prefer discovering a domain from results over recalling one — documentation domains move.`;
+
+server.registerTool(
     "peeky_web_search",
-    `Search the web for technical information. Use this tool for ANY request involving research, documentation lookup, or questions you're not 100% confident about.
-
-WHEN TO USE (prefer this over browsing or guessing):
-- User says "research", "look up", "find docs", "search for"
-- User asks "how do I...", "what is...", "best way to..."
-- User asks about libraries, frameworks, APIs, tools
-- User has an error message or needs debugging help
-- You need current/accurate information beyond your training data
-
-QUERY FORMULATION:
-- For vague or project-level requests, extract the underlying technical concepts and search for those
-- Always include the specific technology/framework/library name
-- Focus on patterns, APIs, or techniques that have documentation - not the user's exact project
-- If a topic is niche, think about what general concept it falls under
-
-When working in a user's codebase, anchor queries with the relevant tech stack. This filters out results about competing or unrelated technologies:
-- If the project uses a specific library (Clerk, Prisma, etc.), include that library name
-- If asking about a framework pattern, include the framework (Next.js, Express, etc.)
-- Generic terms like "auth", "database", or "state management" return mixed results
-
-Examples of good queries:
-- User asks about auth invites (Clerk project) → "clerk organization invite member"
-- User has a React error (TypeScript project) → "react typescript useEffect cleanup memory leak"
-- User wants ORM help (Prisma project) → "prisma relation query include nested"
-- User asks about forms (Next.js + Zod) → "nextjs zod form validation server actions"
-
-SEARCH OPERATORS:
-- site:domain.com - limit to specific domain (e.g., "site:clerk.com organization invite")
-- "exact phrase" - exact phrase match
-- -term - exclude term
-
-Avoid using site: with domains from memory—URLs change frequently. Search without site: first to discover current domains, or only use site: when you've confirmed the domain from recent results.
-
-MULTIPLE SEARCHES:
-Use the same sessionKey across related searches to skip already-fetched URLs. Vary your query terms significantly between searches—similar queries return overlapping results.
-
-FOLLOW-UP:
-If an excerpt looks promising but lacks detail, use peeky_fetch_page with that URL to read more. It reads Stack Overflow, Stack Exchange and GitHub through their APIs rather than by scraping, so it can open results that block ordinary fetching.
-
-ITERATIVE SEARCH STRATEGY:
-Start with a broad query to discover relevant terminology, domains, and error messages. Review results before follow-up searches. Use discovered terms, exact error strings, or promising site patterns to refine subsequent queries. First results teach you how the community talks about the problem—use that vocabulary in follow-ups.
-
-MULTI-SITE TARGETING:
-For technical issues, use OR to constrain to high-signal sources:
-  site:github.com OR site:stackoverflow.com OR site:discuss.ai.google.dev "query here"
-This reduces noise from tutorial blogs and SEO content. Boolean operators (OR, AND) between site: operators are stripped before ranking, so they won't pollute it. Note: OR/AND only work between site: operators—if your search text contains "OR" as a word (e.g., in an error message), it will be preserved.
-
-ERROR MESSAGE SEARCHES:
-When searching for error messages, use exact quotes: "failed to parse" or "invalid schema". Error strings are high-signal anchors that cut through noise.
-
-RETURNS: Verbatim excerpts from each page, quoted rather than summarised, with the heading path they sit under and the source URL. Code blocks keep their fences. Nothing is paraphrased, so you are reading the source rather than a summary of it.`,
     {
-        query: z.string().describe(
-            "Search query with technical terms. Supports operators: site:, \"quotes\", -exclude."
-        ),
-        maxResults: z.number().optional().describe("Maximum pages to scrape (default: 5, max: 10)"),
-        sessionKey: z.string().optional().describe("Session key for cross-call URL deduplication. When provided, URLs already fetched in previous calls with the same key will be skipped. Use a consistent key (e.g., 'react-research') across related searches to avoid re-fetching the same pages."),
+        title: "Search the web",
+        description: `Search the web and return verbatim excerpts from the pages, quoted rather than summarised, with the heading path each sits under and its source URL. Code blocks keep their fences.
+
+QUERY FORMULATION
+Anchor the query with the specific technology, and search for the underlying concept rather than the user's project. Generic terms ("auth", "database", "state management") return mixed results.
+- auth invites, Clerk project → "clerk organization invite member"
+- a React error, TS project → "react typescript useEffect cleanup memory leak"
+- forms, Next.js + Zod → "nextjs zod form validation server actions"
+Quote error strings exactly: they are the highest-signal anchor available.
+
+${OPERATORS}
+
+Start broad, read the results, then refine using the terminology and exact error strings they surface. Vary terms substantially between searches — near-identical queries return the same pages.`,
+        inputSchema: {
+            query: z.string().describe(
+                'Search query with technical terms. Supports site:, "quotes", -exclude.'
+            ),
+            maxResults: z.number().optional().describe("Maximum pages to return (default: 5, max: 10)"),
+            sessionKey: z.string().optional().describe(
+                "Reuse one key across related searches to skip pages already fetched under it."
+            ),
+        },
+        annotations: READ_ONLY,
     },
     async ({ query, maxResults, sessionKey }) => {
         // v2 is what this server runs. v1's search() stays in orchestrator.ts
@@ -91,58 +75,68 @@ RETURNS: Verbatim excerpts from each page, quoted rather than summarised, with t
             ...(sessionKey !== undefined && { sessionKey }),
         });
 
-        return {
-            content: [
-                {
-                    type: "text",
-                    text: result,
-                },
-            ],
-        };
+        return { content: [{ type: "text", text: result }] };
     }
 );
 
-// Register the fetch page tool
-server.tool(
-    "peeky_fetch_page",
-    `Fetch and read a single web page. Use this when you have a specific URL you want to read.
-
-WHEN TO USE:
-- You have a specific URL and want to read its content
-- Following up on a search result to read the full page
-- User provides a URL and asks "what does this say" or "read this page"
-
-MODES:
-- Without query: the whole readable document in order — headings, prose, code blocks, tables
-- With query: only the passages that answer it, ranked
-
-READS PAGES THAT BLOCK SCRAPERS:
-Stack Overflow and Stack Exchange answer every scraper with 403, and GitHub renders repo pages with JavaScript. This tool goes through their APIs instead, so those URLs return real content — answers with their vote counts and accepted flag, issue and discussion threads. npm packages and documentation sites that publish markdown are read from source too. If a search result looks worth reading, it is worth fetching even when you would expect it to be blocked.
-
-Tip: After peeky_web_search, if an excerpt looks promising but lacks detail, fetch that URL with a query to dig deeper.
-
-RETURNS: The page's own words in markdown, with title and source URL. Code blocks keep their fences.`,
+server.registerTool(
+    "peeky_find_sources",
     {
-        url: z.string().describe("The URL to fetch and read"),
-        query: z.string().optional().describe("Optional query to focus extraction. If omitted, returns full cleaned content."),
+        title: "Find sources without reading them",
+        description: `Rank web sources for a query and return the list — URL, page kind, source, authority score, and one line of what each says — without the excerpts. Roughly a tenth the output of peeky_web_search over the same ranking.
+
+Use it to survey what exists before committing tokens: when you expect several candidates and want to read one or two in full, when you need the canonical documentation URL rather than its contents, or when gathering references to cite.
+
+Pages marked CANONICAL are the project's own documentation for something the query named. Follow up with peeky_fetch_page to read one, or peeky_web_search for excerpts across all of them.
+
+${OPERATORS}`,
+        inputSchema: {
+            query: z.string().describe("What you are looking for. Same operators as peeky_web_search."),
+            maxResults: z.number().optional().describe("Maximum sources to list (default: 5, max: 10)"),
+            explain: z.boolean().optional().describe(
+                "Show the signals behind each authority score. Verbose; use when a ranking looks wrong."
+            ),
+            sessionKey: z.string().optional().describe(
+                "Skip pages already fetched under this key. Listing a page does not itself mark it fetched."
+            ),
+        },
+        annotations: READ_ONLY,
+    },
+    async ({ query, maxResults, explain, sessionKey }) => {
+        const result = await surveySourcesV2(query, {
+            ...(maxResults !== undefined && { maxResults }),
+            ...(explain !== undefined && { explain }),
+            ...(sessionKey !== undefined && { sessionKey }),
+        });
+
+        return { content: [{ type: "text", text: result }] };
+    }
+);
+
+server.registerTool(
+    "peeky_fetch_page",
+    {
+        title: "Read one page",
+        description: `Read one URL. Without a query, returns the whole readable document in order — headings, prose, code, tables. With a query, returns only the passages answering it, ranked.
+
+Reads pages that block scrapers: Stack Overflow and Stack Exchange 403 every scraper and GitHub renders repo pages with JavaScript, so those go through their APIs instead — answers with vote counts and accepted flags, issue and discussion threads. npm packages and doc sites that publish markdown are read from source. A result is worth fetching even when you would expect it to be blocked.`,
+        inputSchema: {
+            url: z.string().describe("The URL to fetch and read"),
+            query: z.string().optional().describe(
+                "Optional. Focuses extraction on the passages answering it; omit for the full page."
+            ),
+        },
+        annotations: READ_ONLY,
     },
     async ({ url, query }) => {
         const result = await fetchPageV2(url, {
             ...(query !== undefined && { query }),
         });
 
-        return {
-            content: [
-                {
-                    type: "text",
-                    text: result,
-                },
-            ],
-        };
+        return { content: [{ type: "text", text: result }] };
     }
 );
 
-// Start the server
 async function main() {
     const transport = new StdioServerTransport();
     await server.connect(transport);

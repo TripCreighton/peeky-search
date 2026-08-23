@@ -30,11 +30,12 @@ export interface ParseOptions {
 /**
  * Elements that never carry content.
  *
- * TODO(v2, deferred): removing `img` and `svg` here discards their `alt` and
- * `<title>` text, and `figure`/`figcaption` pairs lose their subject. On chart-
- * and diagram-heavy pages that is real content. Fixing it needs a NodeKind for
- * figures, which would ripple into the scorer, so it waits — this is the place
- * to change when it does.
+ * `img` and `svg` are still removed, but their `alt` and `<title>` text is
+ * hoisted out first by `hoistDescriptiveText` — see there. The deferred TODO
+ * this replaces assumed a `NodeKind` for figures was needed and that
+ * `figcaption` was being lost too; neither turned out to be true. `figcaption`
+ * is in `PARAGRAPH_TAGS` and always survived, and hoisting alt text into an
+ * ordinary paragraph reaches the scorer with no new kind and no ripple.
  */
 const REMOVE_ELEMENTS = [
     "script", "style", "link", "img", "picture", "source", "iframe", "video",
@@ -58,6 +59,26 @@ const BOILERPLATE_ELEMENTS = ["nav", "footer", "header", "aside"];
 
 /** Removing one of these removes the document. No pattern match justifies it. */
 const STRUCTURAL_TAGS = new Set(["html", "body", "head", "main", "article"]);
+
+/** A heading states what a section is about; it is never interface chrome. */
+const HEADING_TAGS = new Set(["h1", "h2", "h3", "h4", "h5", "h6"]);
+
+/**
+ * Alt text worth keeping is a SENTENCE about the subject, not a filename or a
+ * label. These are the shapes that carry nothing: decoration, branding, and the
+ * word "image" in its various disguises.
+ */
+const JUNK_ALT_PATTERNS = [
+    /^(logo|icon|image|images?|img|photo|picture|avatar|banner|thumbnail|screenshot|figure|diagram|chart|graph|illustration|placeholder|spacer|divider|arrow|star|check|close|menu|search)$/i,
+    /^[\w,\s-]+\.(png|jpe?g|gif|svg|webp|avif)$/i,
+    /^(company |product |site |brand )?logo\b/i,
+    /^profile (picture|photo|image)/i,
+    /^(click|tap) (here|to)/i,
+];
+/** Below this, alt text is a label rather than a description. */
+const MIN_ALT_CHARS = 14;
+/** Alt attributes longer than this are keyword stuffing, not prose. */
+const MAX_ALT_CHARS = 300;
 
 /**
  * Consent banners and signup furniture. Narrow by design — see the note at the
@@ -136,18 +157,69 @@ const NOISE_SELECTORS = [
     ".screen-reader-text",
 ];
 
-/** Text that only ever appears on a control. */
+/**
+ * Text that only ever appears on a control — the SAFE tier.
+ *
+ * Every pattern here names its object, and no optional group may reduce one to
+ * a bare content word. That rule is the whole point of the split, and it was
+ * written after measuring what the previous list actually did: five of its ten
+ * patterns were reachable by a single ordinary word, because the prefix or the
+ * object was optional.
+ *
+ *   /^copy\s*(as\s*)?(markdown|code|text)?$/i  matched "COPY"
+ *   /^(share|copy)\s*(this|link|page)?$/i      matched "Share"
+ *   /^(scroll\s*to\s*)?top$/i                  matched "top"
+ *   /^edit\s*(this\s*)?(page|on\s*github)?$/i  matched "Edit"
+ *   /^(give\s*)?feedback$/i                    matched "Feedback"
+ *
+ * Those are headings on real pages — the Dockerfile reference's `COPY`, MDN's
+ * `top`, the Web Share API's `Share` — and this list is consulted in `emit()`
+ * as well as in the DOM sweep, so a match deleted the heading outright. A
+ * deleted heading is not one lost line: it drops out of `headingPath`, so every
+ * node beneath it is filed under the wrong section and `buildPassages` merges
+ * across a boundary that no longer exists.
+ *
+ * The list had it exactly backwards, in fact. It dropped those five content
+ * words and kept all three of the residues copy widgets actually leave behind
+ * ("Copied!", "Copy to clipboard", "copied"), which are now at the bottom.
+ *
+ * Bare words that are only sometimes chrome live in `UI_TEXT_WEAK_PATTERNS`.
+ */
 const UI_TEXT_PATTERNS = [
-    /^copy\s*(as\s*)?(markdown|code|text)?$/i,
-    /^open\s+in\s+\w+/i,
-    /^(share|copy)\s*(this|link|page)?$/i,
-    /^edit\s*(this\s*)?(page|on\s*github)?$/i,
-    /^(give\s*)?feedback$/i,
-    /^(scroll\s*to\s*)?top$/i,
+    /^copy\s+(as\s+)?(markdown|code|text|link|url|page)$/i,
+    /^open\s+in\s+\w+$/i,
+    /^(share|copy)\s+(this|this\s+(page|link)|link|page|url)$/i,
+    /^edit\s+(this\s+)?(page|on\s+github)$/i,
+    /^give\s+feedback$/i,
+    /^(was\s+)?this\s+(page\s+)?helpful\??$/i,
+    /^scroll\s+to\s+top$/i,
+    /^back\s+to\s+top$/i,
     /^on\s+this\s+page$/i,
+    /^in\s+this\s+article$/i,
     /^table\s+of\s+contents$/i,
     /^skip\s+to\s+(main\s+)?content$/i,
     /^you\s+must\s+be\s+logged\s+in\s+to\s+vote$/i,
+    // Copy-widget residue. A copy button is a <button> and is removed with the
+    // element list, but the live-region <span> it toggles is a span, matched
+    // nothing before, and landed in the node stream as prose.
+    /^copied!?$/i,
+    /^copy\s+to\s+clipboard$/i,
+    /^copied\s+to\s+clipboard!?$/i,
+];
+
+/**
+ * The WEAK tier: single words that are chrome on a control and content
+ * everywhere else. Applied only where the element itself corroborates that it
+ * is a control (see `looksLikeControl`), and never to a heading.
+ */
+const UI_TEXT_WEAK_PATTERNS = [
+    /^copy$/i,
+    /^share$/i,
+    /^top$/i,
+    /^edit$/i,
+    /^feedback$/i,
+    /^print$/i,
+    /^permalink$/i,
 ];
 
 /**
@@ -163,11 +235,20 @@ const CALLOUT_PATTERNS = [
 const BLOCK_SELECTOR =
     "h1,h2,h3,h4,h5,h6,p,pre,table,ul,ol,dl,li,blockquote,figure,figcaption,article,section,aside,details";
 
-/** Trailing artifacts glued onto code blocks by copy widgets. */
+/**
+ * Trailing artifacts glued onto code blocks by copy widgets.
+ *
+ * Each pattern requires the artifact to start its own line. Without that the
+ * leading `\s*` matches zero characters and the word only has to END the last
+ * token, which silently truncated identifiers inside fenced code:
+ * `err := io.Copy` became `err := io.`, `await page.Run` became `await page.`.
+ * Corrupting a code block is the worst thing this file can do — verbatim
+ * excerpts are the product — so the line anchor is not optional.
+ */
 const CODE_CLEANUP_PATTERNS = [
-    /\s*(Try|Run|Copy)\s*$/,
-    /\s*Open in (Playground|CodeSandbox|StackBlitz)\s*$/i,
-    /\s*(Edit|View) on GitHub\s*$/i,
+    /(?:^|\n)[ \t]*(Try|Run|Copy)[ \t]*$/,
+    /(?:^|\n)[ \t]*Open in (Playground|CodeSandbox|StackBlitz)[ \t]*$/i,
+    /(?:^|\n)[ \t]*(Edit|View) on GitHub[ \t]*$/i,
 ];
 
 const KNOWN_LANGS = new Set([
@@ -362,6 +443,50 @@ function looksLikeRealContent($: cheerio.CheerioAPI, $el: cheerio.Cheerio<AnyNod
 }
 
 /**
+ * Does the ELEMENT corroborate that its one-word text is a control?
+ *
+ * This is the evidence `UI_TEXT_WEAK_PATTERNS` needs before it may fire. The
+ * word alone never is: "Copy" is a Dockerfile instruction, "top" is a CSS
+ * property, "Share" is a Web API, and each of those is a real heading on a real
+ * page the ranker should be able to read.
+ *
+ * Three things stand as corroboration, and all of them are about the markup
+ * rather than the word:
+ *   - an interactive ROLE, or an anchor that goes nowhere (`href="#"`, or no
+ *     href at all) — a link that does not navigate is a button in a costume;
+ *   - a UI-ish class, id, `aria-label` or `title`, which is the same evidence
+ *     `UI_ELEMENT_PATTERNS` uses, only applied to a weaker text match;
+ *   - a `data-*` clipboard hook.
+ *
+ * A heading never reaches here: prose can sit in a `div` that happens to carry
+ * a `copy` class, but `<h2>COPY</h2>` is the document telling us what the
+ * section is about.
+ */
+function looksLikeControl($el: cheerio.Cheerio<AnyNode>): boolean {
+    const el = $el.get(0);
+    if (el === undefined || !isElement(el)) return false;
+    if (HEADING_TAGS.has(tagOf(el))) return false;
+
+    const attribs = el.attribs ?? {};
+
+    const role = attribs["role"] ?? "";
+    if (/^(button|tab|menuitem|link|switch)$/i.test(role.trim())) return true;
+
+    if (tagOf(el) === "a") {
+        const href = attribs["href"];
+        if (href === undefined || href.trim() === "" || href.trim() === "#") return true;
+        if (/^javascript:/i.test(href.trim())) return true;
+    }
+
+    for (const key of Object.keys(attribs)) {
+        if (key.startsWith("data-") && /clip|copy|share/i.test(key)) return true;
+    }
+
+    const labels = `${attribs["id"] ?? ""} ${attribs["class"] ?? ""} ${attribs["aria-label"] ?? ""} ${attribs["title"] ?? ""}`;
+    return matchesAny(labels, UI_ELEMENT_PATTERNS) || /\bbtn\b|\bbutton\b|\btooltip\b/i.test(labels);
+}
+
+/**
  * True when an `<aside>` is a sidebar rather than an admonition: classed as
  * boilerplate, mostly links, or too short to be saying anything.
  */
@@ -459,6 +584,7 @@ export function removeUIElements($: cheerio.CheerioAPI, container: cheerio.Cheer
     });
 
     container.find("a, span, div, p").each((_, el) => {
+        if (!isElement(el)) return;
         const $el = $(el);
         // Never inside code. A syntax highlighter wraps every token in its own
         // span, so this sweep reaches individual identifiers — and several of
@@ -468,7 +594,16 @@ export function removeUIElements($: cheerio.CheerioAPI, container: cheerio.Cheer
         // `: 0;`. `copy`, `share` and `feedback` are the same hazard.
         if ($el.closest("pre, code").length > 0) return;
         const text = $el.text();
-        if (text.length < UI_TEXT_MAX_LENGTH && matchesAny(collapse(text), UI_TEXT_PATTERNS)) {
+        if (text.length >= UI_TEXT_MAX_LENGTH) return;
+        const collapsed = collapse(text);
+        if (matchesAny(collapsed, UI_TEXT_PATTERNS)) {
+            $el.remove();
+            return;
+        }
+        // A bare "Copy" or "Share" is chrome only when the element it sits in
+        // is itself a control. Outside that it is a Dockerfile instruction, a
+        // CSS property, or an item in a list of operations.
+        if (matchesAny(collapsed, UI_TEXT_WEAK_PATTERNS) && looksLikeControl($el)) {
             $el.remove();
         }
     });
@@ -939,7 +1074,17 @@ interface EmitExtras {
 
 function emit(ctx: WalkContext, kind: NodeKind, text: string, extras: EmitExtras = {}): void {
     if (text === "") return;
-    if (text.length < UI_TEXT_MAX_LENGTH && matchesAny(collapse(text), UI_TEXT_PATTERNS)) return;
+    // This is the SECOND place UI text is filtered, and the more dangerous of
+    // the two: `removeUIElements` sweeps the DOM and skips anything under
+    // `pre, code`, but this sees every node on its way into the document with
+    // no element left to inspect. Only the safe tier may fire here — a weak
+    // match has no markup to corroborate it — and code is exempt outright,
+    // since a `code` node's text is the thing we promise to return verbatim.
+    if (kind === "code") {
+        // fall through: never filter code by its text
+    } else if (text.length < UI_TEXT_MAX_LENGTH && matchesAny(collapse(text), UI_TEXT_PATTERNS)) {
+        return;
+    }
 
     const qa = ctx.qa;
     const node: DocNode = {
@@ -1266,6 +1411,87 @@ function walkDefinitionList(ctx: WalkContext, $dl: cheerio.Cheerio<AnyNode>): vo
  * structural fact the page states — code language, table headers, link targets,
  * dates, Q&A endorsement — stays attached to the text it describes.
  */
+/**
+ * Is this `alt` / `<title>` string a description, or a label?
+ *
+ * The distinction is the whole reason this gate exists. A page carries dozens
+ * of images whose alt text is "logo", "avatar", "hero.png" — hoisting those
+ * would spend budget on noise and dilute every IDF statistic in the corpus. The
+ * alt worth having reads like a sentence: "Request flow from client through the
+ * gateway to the service". So the bar is multi-word, of some length, and not
+ * one of the known junk shapes.
+ */
+function isDescriptiveAlt(raw: string): boolean {
+    const text = collapse(raw);
+    if (text.length < MIN_ALT_CHARS || text.length > MAX_ALT_CHARS) return false;
+    // A single word is a label however long it is.
+    if (!text.includes(" ")) return false;
+    return !matchesAny(text, JUNK_ALT_PATTERNS);
+}
+
+/**
+ * Recover `img[alt]` and `svg > title` text before `REMOVE_ELEMENTS` deletes
+ * the elements carrying it.
+ *
+ * On architecture, chart and diagram pages the alt text is routinely the only
+ * prose statement of the mechanism — the surrounding paragraph says "as shown
+ * below" and the diagram says what actually happens. Dropping it loses the
+ * answer on exactly the pages where the answer is hardest to get elsewhere.
+ *
+ * The text is inserted as an ordinary `<p>` immediately before the element it
+ * came from, so it lands in document order and the walker treats it like any
+ * other paragraph. Inside a `<figure>` it goes before the figure's own caption,
+ * which is where a reader would meet it.
+ */
+function hoistDescriptiveText($: cheerio.CheerioAPI): void {
+    const seen = new Set<string>();
+
+    const hoist = ($el: cheerio.Cheerio<AnyNode>, raw: string): void => {
+        if (!isDescriptiveAlt(raw)) return;
+        const text = collapse(raw);
+        // A figcaption often repeats the alt verbatim; so do sibling images in
+        // a gallery. Either way, once is enough.
+        const key = text.toLowerCase();
+        if (seen.has(key)) return;
+
+        const $figure = $el.closest("figure");
+        const $anchor = $figure.length > 0 ? $figure : $el;
+
+        // A figcaption very often repeats the alt verbatim. Compare against the
+        // CAPTION rather than the whole anchor: an `<svg><title>` is itself part
+        // of the anchor's text, so checking the anchor would always match and
+        // suppress every hoist.
+        if ($figure.length > 0) {
+            const caption = collapse($figure.find("figcaption").first().text()).toLowerCase();
+            if (caption.includes(key)) return;
+        }
+
+        seen.add(key);
+        $anchor.before(`<p data-peeky-alt="1">${escapeHtml(text)}</p>`);
+    };
+
+    $("img[alt]").each((_, el) => {
+        if (!isElement(el)) return;
+        hoist($(el), el.attribs?.["alt"] ?? "");
+    });
+
+    $("svg").each((_, el) => {
+        if (!isElement(el)) return;
+        const $svg = $(el);
+        const title = $svg.children("title").first().text();
+        const label = title !== "" ? title : ($svg.attr("aria-label") ?? "");
+        hoist($svg, label);
+    });
+}
+
+function escapeHtml(text: string): string {
+    return text
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+}
+
 export function parseHtml(html: string, url: string, options: ParseOptions = {}): Doc {
     const $ = cheerio.load(html);
 
@@ -1283,6 +1509,10 @@ export function parseHtml(html: string, url: string, options: ParseOptions = {})
             base = url;
         }
     }
+
+    // Must run BEFORE the element sweep: it reads attributes off the very
+    // elements that sweep deletes.
+    hoistDescriptiveText($);
 
     for (const selector of REMOVE_ELEMENTS) {
         $(selector).remove();

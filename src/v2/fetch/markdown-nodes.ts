@@ -16,6 +16,94 @@ export interface MarkdownNodesOptions {
     startOrder?: number;
 }
 
+/**
+ * A heading's anchor suffix, which is markup rather than title text.
+ *
+ * MDX doc sites pin heading ids with a JSX comment — react.dev writes
+ * `## Reference {/*reference*\/}` — and several static-site generators use the
+ * `{#custom-id}` form. Both were being kept as part of the heading, which put
+ * them in `doc.title`, in every descendant's `headingPath` (so they reached
+ * heading-match scoring at weight 0.13), and in the `> ancestors` line the MCP
+ * output prints.
+ */
+const HEADING_ANCHOR_SUFFIX = /\s*\{\s*(?:\/\*[^*]*\*\/|#[^}]*)\s*\}\s*$/;
+
+/**
+ * A line that is nothing but a JSX/HTML tag.
+ *
+ * MDX sources are full of `<Intro>`, `</Intro>`, `<InlineToc />`, and GitHub
+ * READMEs of `<p align="center">`, `<img …>` and `<br>`. Alone on a line they
+ * carry no text and became prose nodes competing for the character budget.
+ * A line with text ALONGSIDE a tag is left alone — that is content.
+ */
+const TAG_ONLY_LINE = /^\s*<\/?[A-Za-z][\w.:-]*(\s[^<>]*)?\/?>\s*$/;
+
+/** MDX module syntax at the top of a file. Never prose. */
+const MDX_MODULE_LINE = /^\s*(import|export)\s+[^\s].*$/;
+
+/** A thematic break — `---`, `***`, `___`. Structure, not text. */
+const THEMATIC_BREAK = /^\s*([-*_])(\s*\1){2,}\s*$/;
+
+export interface MarkdownDocument {
+    nodes: DocNode[];
+    /** `title:` from YAML frontmatter, when the file had any. */
+    frontmatterTitle?: string;
+}
+
+/**
+ * Split leading YAML frontmatter off a markdown source.
+ *
+ * Only when the very first line is `---`, which is what keeps this from eating
+ * a setext H2 underline further down the file.
+ */
+export function splitFrontmatter(markdown: string): { body: string; title?: string } {
+    const normalized = markdown.replace(/^﻿/, "");
+    if (!/^---[ \t]*(\n|\r\n)/.test(normalized)) return { body: markdown };
+
+    const lines = normalized.replace(/\r\n/g, "\n").split("\n");
+    let end = -1;
+    for (let i = 1; i < lines.length; i++) {
+        if (/^---[ \t]*$/.test(lines[i] ?? "")) {
+            end = i;
+            break;
+        }
+    }
+    // An unterminated `---` is not frontmatter; leave the file alone.
+    if (end === -1) return { body: markdown };
+
+    let title: string | undefined;
+    for (const line of lines.slice(1, end)) {
+        const match = /^title:\s*(.+?)\s*$/.exec(line ?? "");
+        if (match === null) continue;
+        const raw = (match[1] ?? "").trim();
+        // Strip one layer of matching quotes, which YAML allows either way.
+        const unquoted = /^(["'])(.*)\1$/.exec(raw);
+        const value = unquoted !== null ? (unquoted[2] ?? "") : raw;
+        if (value !== "") title = value;
+        break;
+    }
+
+    return {
+        body: lines.slice(end + 1).join("\n"),
+        ...(title !== undefined ? { title } : {}),
+    };
+}
+
+/**
+ * Parse a markdown (or MDX) source into nodes plus whatever the frontmatter
+ * declared. `markdownToNodes` remains the node-only entry point.
+ */
+export function parseMarkdownDocument(
+    markdown: string,
+    options: MarkdownNodesOptions = {}
+): MarkdownDocument {
+    const { body, title } = splitFrontmatter(markdown);
+    return {
+        nodes: markdownToNodes(body, options),
+        ...(title !== undefined ? { frontmatterTitle: title } : {}),
+    };
+}
+
 function isTableRow(line: string): boolean {
     return line.trim().startsWith("|") || (line.includes("|") && /^[\s|:-]+$/.test(line) === false && line.split("|").length > 2);
 }
@@ -96,11 +184,23 @@ export function markdownToNodes(markdown: string, options: MarkdownNodesOptions 
             flushParagraph();
             flushQuote();
             const level = (headingMatch[1] as string).length;
-            const text = (headingMatch[2] as string).trim();
+            const text = (headingMatch[2] as string).replace(HEADING_ANCHOR_SUFFIX, "").trim();
             const targetLength = level - 1;
             if (targetLength < path.length) path.length = targetLength;
             pushNode(nodes, orderRef, "heading", text, path, { level });
             if (text.length > 0) path.push(text);
+            i++;
+            continue;
+        }
+
+        // MDX and HTML scaffolding: a line that is only a tag, an import/export,
+        // or a thematic break. All three carry no text and were becoming prose.
+        // Order matters — these must be tested before the block-quote and
+        // list-item rules, and `TAG_ONLY_LINE` before anything that could treat
+        // `<` as text.
+        if (TAG_ONLY_LINE.test(line) || MDX_MODULE_LINE.test(line) || THEMATIC_BREAK.test(line)) {
+            flushParagraph();
+            flushQuote();
             i++;
             continue;
         }

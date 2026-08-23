@@ -537,3 +537,91 @@ describe("parseHtml: robustness", () => {
         expect(JSON.stringify(a)).toBe(JSON.stringify(b));
     });
 });
+
+/**
+ * Regression cover for the two text filters and for alt recovery.
+ *
+ * These are minimal fixtures on purpose: each one isolates a single pattern, so
+ * a failure names the pattern rather than the page.
+ */
+const nodeTexts = (html: string): string[] =>
+    parseHtml(html, "https://example.com/x").nodes.map((n) => `${n.kind}:${n.text}`);
+
+describe("content words are no longer deleted", () => {
+    it("keeps a Dockerfile COPY heading", () => {
+        expect(nodeTexts(`<main><h2>COPY</h2><p>The COPY instruction copies new files.</p></main>`))
+            .toEqual(["heading:COPY", "prose:The COPY instruction copies new files."]);
+    });
+    it("keeps MDN's css `top` h1", () => {
+        expect(nodeTexts(`<main><h1>top</h1><p>The top CSS property participates in specifying.</p></main>`))
+            .toContain("heading:top");
+    });
+    it("keeps Edit / Share / Feedback headings", () => {
+        for (const w of ["Edit", "Share", "Feedback", "Copy"]) {
+            expect(nodeTexts(`<main><h2>${w}</h2><p>Body text about ${w} goes here.</p></main>`)).toContain(`heading:${w}`);
+        }
+    });
+    it("keeps a bare Copy list item", () => {
+        expect(nodeTexts(`<main><ul><li>Copy</li><li>Move</li><li>Delete</li></ul></main>`))
+            .toEqual(["list-item:Copy", "list-item:Move", "list-item:Delete"]);
+    });
+    it("does not eat a paragraph starting 'Open in'", () => {
+        expect(nodeTexts(`<main><p>Open in the browser to see it.</p></main>`))
+            .toEqual(["prose:Open in the browser to see it."]);
+    });
+});
+
+describe("actual chrome is still removed", () => {
+    it("drops copy-button residue", () => {
+        const out = nodeTexts(`<main><pre><code>npm install foo</code></pre><span class="cbt">Copied!</span><p>Then run it.</p></main>`);
+        expect(out).not.toContain("prose:Copied!");
+        expect(out).toContain("code:npm install foo");
+    });
+    it("drops 'Copy to clipboard'", () => {
+        expect(nodeTexts(`<main><div>Copy to clipboard</div><p>Real content here about things.</p></main>`))
+            .toEqual(["prose:Real content here about things."]);
+    });
+    it("drops phrase chrome", () => {
+        for (const w of ["Scroll to top", "On this page", "Edit this page", "Copy as markdown", "Skip to main content"]) {
+            expect(nodeTexts(`<main><div>${w}</div><p>Actual article body text lives here.</p></main>`))
+                .toEqual(["prose:Actual article body text lives here."]);
+        }
+    });
+    it("drops a bare 'Copy' when the element is a control", () => {
+        const out = nodeTexts(`<main><a href="#" class="copy-button">Copy</a><p>Article body text here.</p></main>`);
+        expect(out).not.toContain("prose:Copy");
+    });
+    it("drops a bare 'Top' on a role=button", () => {
+        expect(nodeTexts(`<main><span role="button">Top</span><p>Article body text here.</p></main>`))
+            .toEqual(["prose:Article body text here."]);
+    });
+});
+
+describe("code blocks are not truncated", () => {
+    it("keeps identifiers ending in Copy/Run/Try", () => {
+        expect(nodeTexts(`<main><pre><code>err := io.Copy</code></pre></main>`)).toEqual(["code:err := io.Copy"]);
+        expect(nodeTexts(`<main><pre><code>await page.Run</code></pre></main>`)).toEqual(["code:await page.Run"]);
+    });
+    it("still strips a real trailing copy affordance on its own line", () => {
+        expect(nodeTexts(`<main><pre><code>const t = setTimeout(fn, 0)\nCopy</code></pre></main>`))
+            .toEqual(["code:const t = setTimeout(fn, 0)"]);
+    });
+});
+
+describe("alt text is recovered", () => {
+    it("hoists descriptive alt, keeps figcaption", () => {
+        const out = nodeTexts(`<main><figure><img src="a.png" alt="Request flow: client to gateway to service"><figcaption>Figure 1: the request path</figcaption></figure><p>Some prose.</p></main>`);
+        expect(out).toContain("prose:Request flow: client to gateway to service");
+        expect(out).toContain("prose:Figure 1: the request path");
+    });
+    it("ignores junk alt", () => {
+        for (const alt of ["logo", "avatar", "hero-image.png", "icon", "Company logo"]) {
+            expect(nodeTexts(`<main><img src="a.png" alt="${alt}"><p>Body text of the article.</p></main>`))
+                .toEqual(["prose:Body text of the article."]);
+        }
+    });
+    it("reads svg > title", () => {
+        expect(nodeTexts(`<main><svg><title>State machine: idle to running to done</title></svg><p>Body.</p></main>`))
+            .toContain("prose:State machine: idle to running to done");
+    });
+});
