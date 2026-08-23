@@ -92,17 +92,17 @@ describe("formatSurvey", () => {
     const surveyed = result([
         page({
             rank: 1,
-            url: "https://react.dev/reference/react/useEffect",
-            title: "useEffect",
+            url: "https://timerlib.example/reference/use-timer",
+            title: "useTimer",
             kind: "reference",
             source: "markdown",
             authority: authority(0.91, true, ["+0.30 declared homepage", "+0.15 project docs"]),
-            excerpts: [excerpt("Reference\nuseEffect is a React Hook that lets you synchronize.", ["Reference"])],
+            excerpts: [excerpt("Reference\nuseTimer schedules a callback and clears it on unmount.", ["Reference"])],
         }),
         page({
             rank: 2,
-            url: "https://stackoverflow.com/questions/1",
-            title: "Why does my effect run twice?",
+            url: "https://qa.example/questions/1",
+            title: "Why does my timer fire twice?",
             kind: "qa",
             source: "stackexchange",
             authority: authority(0.54),
@@ -110,12 +110,12 @@ describe("formatSurvey", () => {
     ]);
 
     it("lists provenance per source", () => {
-        const out = formatSurvey("useEffect cleanup", surveyed, 0, false);
+        const out = formatSurvey("timer cleanup", surveyed, 0, false);
 
-        expect(out).toContain("1. useEffect");
-        expect(out).toContain("https://react.dev/reference/react/useEffect");
+        expect(out).toContain("1. useTimer");
+        expect(out).toContain("https://timerlib.example/reference/use-timer");
         expect(out).toContain("reference · via markdown · authority 0.91 · CANONICAL");
-        expect(out).toContain("2. Why does my effect run twice?");
+        expect(out).toContain("2. Why does my timer fire twice?");
         expect(out).toContain("qa · via stackexchange · authority 0.54");
     });
 
@@ -148,7 +148,7 @@ describe("formatSurvey", () => {
     it("drops the repeated heading line from the teaser", () => {
         const out = formatSurvey("q", surveyed, 0, false);
 
-        expect(out).toContain('"useEffect is a React Hook that lets you synchronize."');
+        expect(out).toContain('"useTimer schedules a callback and clears it on unmount."');
     });
 
     it("truncates a long teaser on a word boundary", () => {
