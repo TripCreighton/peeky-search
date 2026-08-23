@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { markdownToNodes } from "../../fetch/markdown-nodes";
+import { markdownToNodes, parseMarkdownDocument } from "../../fetch/markdown-nodes";
 
 describe("markdownToNodes", () => {
     it("extracts headings with level and tracks heading path", () => {
@@ -79,5 +79,51 @@ describe("markdownToNodes", () => {
 
     it("returns an empty array for empty input", () => {
         expect(markdownToNodes("")).toEqual([]);
+    });
+});
+
+describe("MDX no longer leaks", () => {
+    const md = `---
+title: useEffect
+---
+
+<Intro>
+
+\`useEffect\` is a React Hook.
+
+</Intro>
+
+<InlineToc />
+
+---
+
+## Reference {/*reference*/}
+
+### \`useEffect(setup, dependencies?)\` {/*useeffect*/}
+
+Call it.
+`;
+    it("reads the frontmatter title", () => {
+        expect(parseMarkdownDocument(md).frontmatterTitle).toBe("useEffect");
+    });
+    it("strips anchors and scaffolding", () => {
+        const { nodes } = parseMarkdownDocument(md);
+        const all = nodes.map(n => `${n.kind}:${n.text}`);
+        expect(all).toEqual([
+            "prose:`useEffect` is a React Hook.",
+            "heading:Reference",
+            "heading:`useEffect(setup, dependencies?)`",
+            "prose:Call it.",
+        ]);
+        expect(nodes[3]?.headingPath).toEqual(["Reference", "`useEffect(setup, dependencies?)`"]);
+    });
+    it("supports {#custom-id} anchors too", () => {
+        expect(markdownToNodes("## Getting started {#start}")[0]?.text).toBe("Getting started");
+    });
+    it("leaves a line with text beside a tag alone", () => {
+        expect(markdownToNodes("Use <code>foo</code> for that.")[0]?.text).toBe("Use <code>foo</code> for that.");
+    });
+    it("does not eat a --- that is not frontmatter", () => {
+        expect(parseMarkdownDocument("# T\n\nbody\n").frontmatterTitle).toBeUndefined();
     });
 });

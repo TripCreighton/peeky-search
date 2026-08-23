@@ -23,7 +23,7 @@
 
 import type { Doc } from "../types";
 import type { FetchOptions, SourceAdapter } from "./types";
-import { markdownToNodes } from "./markdown-nodes";
+import { parseMarkdownDocument } from "./markdown-nodes";
 
 const DEFAULT_TIMEOUT_MS = 6000;
 const DEFAULT_USER_AGENT =
@@ -164,15 +164,30 @@ export const markdownAdapter: SourceAdapter = {
 
         recordHit(host);
 
-        const nodes = markdownToNodes(candidate.text);
+        const { nodes, frontmatterTitle } = parseMarkdownDocument(candidate.text);
         if (nodes.length === 0) return null;
 
+        // Frontmatter first. These files are frequently MDX source rather than
+        // rendered markdown, and there the first heading is a section of the
+        // page, not the page — react.dev's useEffect reference opens with
+        // `## Reference`, so the first heading gave every one of its pages a
+        // title naming a section while `title: useEffect` sat unread two lines
+        // above it.
         const headingNode = nodes.find((n) => n.kind === "heading");
-        const title = headingNode?.text ?? parsed.pathname.split("/").filter((s) => s.length > 0).pop() ?? url;
+        const title =
+            frontmatterTitle ??
+            headingNode?.text ??
+            parsed.pathname.split("/").filter((s) => s.length > 0).pop() ??
+            url;
 
         return {
             url,
-            finalUrl: mdUrl,
+            // NO `finalUrl`. It is where the bytes came from, not where the
+            // document lives, and the MCP formatters cite `finalUrl ?? url` —
+            // so setting it here handed the model
+            // `https://react.dev/reference/react/useEffect.md` to quote and to
+            // follow up on instead of the page a human can open. The html
+            // adapter's `finalUrl` is a genuine redirect target and stays.
             title,
             kind: "guide",
             source: "markdown",
